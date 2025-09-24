@@ -8,7 +8,128 @@ class Database {
         this.baseUrl = '';
         this.cache = new Map();
         this.cacheTimeout = 5 * 60 * 1000; // 5 minutos
-        debug.log('Database system initialized');
+        this.initializeLocalData();
+        debug.log('Database system initialized with localStorage');
+    }
+
+    // Inicializar datos demo en localStorage
+    initializeLocalData() {
+        debug.log('Initializing demo data in localStorage');
+        
+        // Solo inicializar si no existen datos
+        if (!localStorage.getItem('table_users')) {
+            this.createDemoUsers();
+        }
+        
+        if (!localStorage.getItem('table_projects')) {
+            this.createDemoProjects();
+        }
+        
+        if (!localStorage.getItem('table_deposits')) {
+            this.createDemoDeposits();
+        }
+        
+        // Expenses se crean dinámicamente
+        if (!localStorage.getItem('table_expenses')) {
+            localStorage.setItem('table_expenses', JSON.stringify([]));
+        }
+    }
+
+    // Crear usuarios demo
+    createDemoUsers() {
+        const users = [
+            {
+                id: "admin-001",
+                email: "admin@sistema.com",
+                password: "admin123",
+                name: "Administrador Sistema",
+                role: "admin",
+                status: "active",
+                created_at: 1640995200000
+            },
+            {
+                id: "user-001",
+                email: "maria@empresa.com", 
+                password: "user123",
+                name: "María González",
+                role: "user",
+                status: "active",
+                created_at: 1640995200000
+            },
+            {
+                id: "user-002",
+                email: "juan@empresa.com",
+                password: "user123", 
+                name: "Juan Pérez",
+                role: "user",
+                status: "pending",
+                created_at: 1640995200000
+            }
+        ];
+        
+        localStorage.setItem('table_users', JSON.stringify(users));
+        debug.log('Demo users created', users.length);
+    }
+
+    // Crear proyectos demo
+    createDemoProjects() {
+        const projects = [
+            {
+                id: "proj-001",
+                name: "Proyecto Alpha",
+                description: "Desarrollo de nueva aplicación web para el cliente ABC",
+                budget: 50000,
+                status: "active",
+                created_by: "admin-001",
+                created_at: 1640995200000
+            },
+            {
+                id: "proj-002", 
+                name: "Campaña Beta",
+                description: "Campaña de marketing digital para lanzamiento de producto",
+                budget: 75000,
+                status: "active",
+                created_by: "admin-001",
+                created_at: 1640995200000
+            },
+            {
+                id: "proj-003",
+                name: "Oficinas 2024", 
+                description: "Renovación de oficinas centrales",
+                budget: 30000,
+                status: "active",
+                created_by: "admin-001",
+                created_at: 1640995200000
+            }
+        ];
+        
+        localStorage.setItem('table_projects', JSON.stringify(projects));
+        debug.log('Demo projects created', projects.length);
+    }
+
+    // Crear depósitos demo
+    createDemoDeposits() {
+        const deposits = [
+            {
+                id: "dep-001",
+                project_id: "proj-001",
+                amount: 10000,
+                description: "Depósito inicial proyecto Alpha",
+                created_by: "admin-001",
+                created_at: 1640995200000
+            },
+            {
+                id: "dep-002",
+                project_id: "proj-002", 
+                amount: 15000,
+                description: "Primer adelanto campaña Beta",
+                created_by: "admin-001",
+                created_at: 1640995200000
+            }
+        ];
+        
+        localStorage.setItem('table_deposits', JSON.stringify(deposits));
+        debug.log('Demo deposits created', deposits.length);
     }
 
     // Generar ID único
@@ -16,33 +137,169 @@ class Database {
         return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     }
 
-    // Hacer petición HTTP con manejo de errores
+    // Simulación de petición HTTP usando localStorage
     async makeRequest(endpoint, options = {}) {
         const monitor = debug.monitorApiCall(endpoint, options.method || 'GET', options.body);
         
         try {
-            debug.log(`Making request to: ${endpoint}`, options);
+            debug.log(`Making localStorage request to: ${endpoint}`, options);
             
-            const response = await fetch(endpoint, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...options.headers
-                },
-                ...options
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            // Simular delay de red
+            await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
+            
+            const method = options.method || 'GET';
+            const tableName = this.extractTableName(endpoint);
+            
+            let result;
+            
+            switch (method) {
+                case 'GET':
+                    if (endpoint.includes('/') && endpoint.split('/').length > 2) {
+                        // GET single record
+                        const recordId = endpoint.split('/').pop();
+                        result = this.getLocalRecord(tableName, recordId);
+                    } else {
+                        // GET all records
+                        result = this.getLocalRecords(tableName);
+                    }
+                    break;
+                    
+                case 'POST':
+                    const createData = JSON.parse(options.body);
+                    result = this.createLocalRecord(tableName, createData);
+                    break;
+                    
+                case 'PUT':
+                    const updateData = JSON.parse(options.body);
+                    const updateId = endpoint.split('/').pop();
+                    result = this.updateLocalRecord(tableName, updateId, updateData);
+                    break;
+                    
+                case 'PATCH':
+                    const patchData = JSON.parse(options.body);
+                    const patchId = endpoint.split('/').pop();
+                    result = this.patchLocalRecord(tableName, patchId, patchData);
+                    break;
+                    
+                case 'DELETE':
+                    const deleteId = endpoint.split('/').pop();
+                    result = this.deleteLocalRecord(tableName, deleteId);
+                    break;
+                    
+                default:
+                    throw new Error(`Method ${method} not supported`);
             }
 
-            const data = await response.json();
-            monitor.success(data);
-            return data;
+            monitor.success(result);
+            return result;
             
         } catch (error) {
             monitor.error(error);
             throw new Error(`Database request failed: ${error.message}`);
         }
+    }
+
+    // Extraer nombre de tabla del endpoint
+    extractTableName(endpoint) {
+        if (endpoint.startsWith('tables/')) {
+            return endpoint.split('/')[1];
+        }
+        return endpoint.split('/')[0];
+    }
+
+    // Obtener datos locales de una tabla
+    getLocalRecords(tableName) {
+        const data = JSON.parse(localStorage.getItem(`table_${tableName}`) || '[]');
+        return {
+            data: data,
+            total: data.length,
+            page: 1,
+            limit: 1000,
+            table: tableName
+        };
+    }
+
+    // Obtener un registro local
+    getLocalRecord(tableName, recordId) {
+        const data = JSON.parse(localStorage.getItem(`table_${tableName}`) || '[]');
+        const record = data.find(r => r.id === recordId);
+        if (!record) {
+            throw new Error(`Record ${recordId} not found in ${tableName}`);
+        }
+        return record;
+    }
+
+    // Crear registro local
+    createLocalRecord(tableName, data) {
+        const records = JSON.parse(localStorage.getItem(`table_${tableName}`) || '[]');
+        
+        // Agregar campos del sistema
+        const newRecord = {
+            ...data,
+            id: data.id || this.generateId(),
+            created_at: data.created_at || Date.now(),
+            updated_at: Date.now()
+        };
+        
+        records.push(newRecord);
+        localStorage.setItem(`table_${tableName}`, JSON.stringify(records));
+        
+        return newRecord;
+    }
+
+    // Actualizar registro local completo
+    updateLocalRecord(tableName, recordId, data) {
+        const records = JSON.parse(localStorage.getItem(`table_${tableName}`) || '[]');
+        const index = records.findIndex(r => r.id === recordId);
+        
+        if (index === -1) {
+            throw new Error(`Record ${recordId} not found in ${tableName}`);
+        }
+        
+        const updatedRecord = {
+            ...data,
+            id: recordId,
+            updated_at: Date.now()
+        };
+        
+        records[index] = updatedRecord;
+        localStorage.setItem(`table_${tableName}`, JSON.stringify(records));
+        
+        return updatedRecord;
+    }
+
+    // Actualizar registro local parcialmente
+    patchLocalRecord(tableName, recordId, data) {
+        const records = JSON.parse(localStorage.getItem(`table_${tableName}`) || '[]');
+        const index = records.findIndex(r => r.id === recordId);
+        
+        if (index === -1) {
+            throw new Error(`Record ${recordId} not found in ${tableName}`);
+        }
+        
+        const updatedRecord = {
+            ...records[index],
+            ...data,
+            updated_at: Date.now()
+        };
+        
+        records[index] = updatedRecord;
+        localStorage.setItem(`table_${tableName}`, JSON.stringify(records));
+        
+        return updatedRecord;
+    }
+
+    // Eliminar registro local
+    deleteLocalRecord(tableName, recordId) {
+        const records = JSON.parse(localStorage.getItem(`table_${tableName}`) || '[]');
+        const filteredRecords = records.filter(r => r.id !== recordId);
+        
+        if (filteredRecords.length === records.length) {
+            throw new Error(`Record ${recordId} not found in ${tableName}`);
+        }
+        
+        localStorage.setItem(`table_${tableName}`, JSON.stringify(filteredRecords));
+        return null;
     }
 
     // Validar datos antes de enviar
