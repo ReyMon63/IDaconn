@@ -318,4 +318,14 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+// Shortcut para resetear datos demo con Ctrl+Shift+R
+document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.shiftKey && e.key === 'R') {
+        e.preventDefault();
+        if (window.app && typeof window.app.resetDemoData === 'function') {
+            window.app.resetDemoData();
+        }
+    }
+});
+
 console.log('Debug system loaded - Use Ctrl+Shift+D to toggle debug mode');
