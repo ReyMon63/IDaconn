@@ -8,7 +8,12 @@ class Database {
         this.baseUrl = '';
         this.cache = new Map();
         this.cacheTimeout = 5 * 60 * 1000; // 5 minutos
-        this.initializeLocalData();
+        
+        // Asegurar inicialización correcta
+        setTimeout(() => {
+            this.initializeLocalData();
+        }, 100);
+        
         debug.log('Database system initialized with localStorage');
     }
 
@@ -733,3 +738,29 @@ class Database {
 
 // Crear instancia global
 window.db = new Database();
+
+// Función global de debugging para verificar login
+window.checkLoginStatus = function(email = 'ramon.rivas@me.com', password = 'admin123') {
+    console.log('🔍 Checking login status...');
+    
+    const users = JSON.parse(localStorage.getItem('table_users') || '[]');
+    console.log('👥 Total users in storage:', users.length);
+    
+    const adminUsers = users.filter(u => u.role === 'admin');
+    console.log('👨‍💼 Admin users:', adminUsers);
+    
+    const targetUser = users.find(u => 
+        u.email?.toLowerCase() === email.toLowerCase() && 
+        u.password === password
+    );
+    
+    if (targetUser) {
+        console.log('✅ User found:', targetUser);
+        console.log('📊 User status:', targetUser.status);
+        return targetUser;
+    } else {
+        console.log('❌ User NOT found with credentials:', { email, password });
+        console.log('📋 Available emails:', users.map(u => u.email));
+        return null;
+    }
+};
