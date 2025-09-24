@@ -1,3 +1,4 @@
+[README.md](https://github.com/user-attachments/files/22521515/README.md)
 # 💰 Gestor de Gastos - WebApp PWA
 
 Una **aplicación web progresiva (PWA)** completa para administrar gastos de múltiples proyectos con captura de fotos, OCR automático y reportes exportables. Optimizada especialmente para dispositivos móviles.
@@ -111,9 +112,14 @@ js/
 └── app.js        # Coordinador principal
 ```
 
-## 🎯 **Credenciales Demo**
+## 🎯 **Credenciales de Acceso**
 
-### 👨‍💼 **Administrador**
+### 👨‍💼 **Administrador Principal**
+- **Email**: `ramon.rivas@me.com`
+- **Password**: `admin123`
+- **Permisos**: Crear proyectos, aprobar usuarios, gestionar depósitos
+
+### 👨‍💼 **Administrador Demo**
 - **Email**: `admin@sistema.com`
 - **Password**: `admin123`
 - **Permisos**: Crear proyectos, aprobar usuarios, gestionar depósitos
