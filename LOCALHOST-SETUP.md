@@ -1,3 +1,4 @@
+[LOCALHOST-SETUP.md](https://github.com/user-attachments/files/22521538/LOCALHOST-SETUP.md)
 # 🚀 Configuración para GitHub Pages
 
 ## ✅ **Modificaciones Realizadas**
@@ -15,8 +16,9 @@ La webapp ha sido **modificada para funcionar completamente con localStorage** e
 ### **1. Abrir la aplicación:**
 `https://reymon63.github.io/IDaconn/`
 
-### **2. Credenciales demo:**
-- **Admin**: `admin@sistema.com` / `admin123` 
+### **2. Credenciales de acceso:**
+- **Admin Principal**: `ramon.rivas@me.com` / `admin123`
+- **Admin Demo**: `admin@sistema.com` / `admin123` 
 - **Usuario**: `maria@empresa.com` / `user123`
 
 ### **3. Funcionalidades a probar:**
