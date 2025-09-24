@@ -243,11 +243,14 @@ class Auth {
                 () => db.createRecord('users', newUser)
             );
             
+            // Simular envío de email al administrador
+            this.simulateAdminNotification(newUser);
+            
             // Mostrar mensaje de éxito
-            this.showSuccessMessage('Registro exitoso. Tu cuenta está pendiente de aprobación por el administrador.');
+            this.showSuccessMessage(`Registro exitoso. Se ha notificado al administrador (${this.getAdminEmail()}). Tu cuenta está pendiente de aprobación.`);
             
             // Volver al login
-            setTimeout(() => this.showLogin(), 2000);
+            setTimeout(() => this.showLogin(), 3000);
             
             debug.log('Registration successful', { email });
             
@@ -400,6 +403,49 @@ class Auth {
     // Verificar si hay sesión activa
     isAuthenticated() {
         return this.currentUser !== null;
+    }
+
+    // Simular notificación al administrador
+    simulateAdminNotification(newUser) {
+        const adminEmail = this.getAdminEmail();
+        
+        debug.log('Simulating admin notification email', {
+            to: adminEmail,
+            subject: 'Nueva solicitud de registro',
+            user: newUser.name,
+            email: newUser.email
+        });
+        
+        // Mostrar notificación simulada
+        setTimeout(() => {
+            this.showSuccessMessage(`📧 Email simulado enviado a: ${adminEmail}`);
+        }, 1000);
+    }
+
+    // Obtener email del administrador principal
+    getAdminEmail() {
+        return 'ramon.rivas@me.com';
+    }
+
+    // Función para debugging - forzar reactivación de datos
+    forceDataReset() {
+        debug.log('Forcing data reset and reinitialization');
+        
+        // Limpiar localStorage
+        localStorage.removeItem('table_users');
+        localStorage.removeItem('table_projects');
+        localStorage.removeItem('table_deposits');
+        localStorage.removeItem('table_expenses');
+        
+        // Forzar reinicialización
+        if (window.db) {
+            window.db.initializeLocalData();
+        }
+        
+        debug.log('Data reset complete - please try login again');
+        
+        // Mostrar mensaje al usuario
+        this.showSuccessMessage('Datos reiniciados. Intenta hacer login nuevamente.');
     }
 }
 
