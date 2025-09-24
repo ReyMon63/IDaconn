@@ -16,22 +16,45 @@ class Database {
     initializeLocalData() {
         debug.log('Initializing demo data in localStorage');
         
-        // Solo inicializar si no existen datos
-        if (!localStorage.getItem('table_users')) {
+        // Forzar reinicialización si los datos están corruptos
+        const forceInit = !this.validateLocalData();
+        
+        // Inicializar usuarios
+        if (!localStorage.getItem('table_users') || forceInit) {
             this.createDemoUsers();
         }
         
-        if (!localStorage.getItem('table_projects')) {
+        if (!localStorage.getItem('table_projects') || forceInit) {
             this.createDemoProjects();
         }
         
-        if (!localStorage.getItem('table_deposits')) {
+        if (!localStorage.getItem('table_deposits') || forceInit) {
             this.createDemoDeposits();
         }
         
         // Expenses se crean dinámicamente
         if (!localStorage.getItem('table_expenses')) {
             localStorage.setItem('table_expenses', JSON.stringify([]));
+        }
+        
+        debug.log('Local data initialization complete');
+    }
+
+    // Validar que los datos locales sean correctos
+    validateLocalData() {
+        try {
+            const users = JSON.parse(localStorage.getItem('table_users') || '[]');
+            const hasAdmin = users.some(u => u.role === 'admin' && u.status === 'active');
+            
+            if (!hasAdmin) {
+                debug.warn('No active admin found, forcing data reinitialization');
+                return false;
+            }
+            
+            return users.length > 0;
+        } catch (error) {
+            debug.error('Local data validation failed', error);
+            return false;
         }
     }
 
@@ -40,6 +63,15 @@ class Database {
         const users = [
             {
                 id: "admin-001",
+                email: "ramon.rivas@me.com",
+                password: "admin123",
+                name: "Ramón Rivas",
+                role: "admin",
+                status: "active",
+                created_at: 1640995200000
+            },
+            {
+                id: "admin-002",
                 email: "admin@sistema.com",
                 password: "admin123",
                 name: "Administrador Sistema",
@@ -582,10 +614,28 @@ class Database {
         try {
             debug.log('Attempting user authentication', { email });
             
-            const users = await this.getRecords('users', { search: email });
-            const user = users.data.find(u => u.email === email && u.password === password);
+            // Obtener usuarios de localStorage
+            const usersData = JSON.parse(localStorage.getItem('table_users') || '[]');
+            debug.log('Users in localStorage', usersData.length);
+            
+            // Buscar usuario por email y password
+            const user = usersData.find(u => {
+                const emailMatch = u.email && u.email.toLowerCase() === email.toLowerCase();
+                const passwordMatch = u.password === password;
+                debug.log('Checking user', { 
+                    userEmail: u.email, 
+                    emailMatch, 
+                    passwordMatch,
+                    userStatus: u.status 
+                });
+                return emailMatch && passwordMatch;
+            });
             
             if (!user) {
+                debug.error('No user found with matching credentials', { 
+                    email, 
+                    availableUsers: usersData.map(u => ({ email: u.email, status: u.status }))
+                });
                 throw new Error('Credenciales inválidas');
             }
             
@@ -593,7 +643,11 @@ class Database {
                 throw new Error('Cuenta no activa. Contacta al administrador.');
             }
             
-            debug.log('User authenticated successfully', { id: user.id, role: user.role });
+            debug.log('User authenticated successfully', { 
+                id: user.id, 
+                role: user.role, 
+                name: user.name 
+            });
             return user;
             
         } catch (error) {
