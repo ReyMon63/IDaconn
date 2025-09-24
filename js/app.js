@@ -390,6 +390,24 @@ class App {
         debug.log('Device info', info);
         return info;
     }
+
+    // Resetear datos demo (para debugging)
+    resetDemoData() {
+        if (confirm('¿Estás seguro de resetear todos los datos demo?')) {
+            localStorage.removeItem('table_users');
+            localStorage.removeItem('table_projects'); 
+            localStorage.removeItem('table_expenses');
+            localStorage.removeItem('table_deposits');
+            
+            // Reinicializar
+            if (window.db) {
+                window.db.initializeLocalData();
+            }
+            
+            // Recargar página
+            window.location.reload();
+        }
+    }
 }
 
 // Inicializar aplicación
