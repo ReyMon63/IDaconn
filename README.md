@@ -89,7 +89,8 @@ Una **aplicación web progresiva (PWA)** completa para administrar gastos de mú
 - **Font Awesome** para iconografía
 
 ### **Persistencia de Datos**
-- **RESTful Table API** integrada
+- **localStorage** para almacenamiento local
+- **Datos demo** inicializados automáticamente
 - **Esquemas de datos** estructurados:
   - `users` - Gestión de usuarios y roles
   - `projects` - Proyectos y presupuestos
@@ -172,6 +173,11 @@ js/
 - **Keyboard shortcut**: `Ctrl + Shift + L`
 - Descarga archivo JSON con logs completos
 - Útil para debugging en producción
+
+### **Resetear Datos Demo**
+- **Keyboard shortcut**: `Ctrl + Shift + R`
+- Borra todos los datos y reinicia con datos demo
+- Útil para testing y desarrollo
 
 ### **Validaciones Implementadas**
 - ✅ Validación de formularios en tiempo real
