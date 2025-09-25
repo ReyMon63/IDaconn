@@ -263,10 +263,52 @@ class ExpenseManager {
         if (canvas) canvas.classList.add('hidden');
     }
 
-    // Iniciar cámara
+    // Iniciar scanner inteligente
     async startCamera() {
         try {
-            debug.log('Starting camera for expense');
+            debug.log('Starting smart scanner for expense');
+            
+            const video = document.getElementById('expenseVideo');
+            const overlayCanvas = document.getElementById('overlayCanvas');
+            const statusDiv = document.getElementById('scannerStatus');
+            const statusText = document.getElementById('statusText');
+            
+            if (!video || !overlayCanvas) {
+                debug.error('Video or overlay canvas not found');
+                return;
+            }
+
+            // Mostrar estado de inicialización
+            statusDiv?.classList.remove('hidden');
+            if (statusText) statusText.textContent = '🚀 Iniciando scanner inteligente...';
+
+            // Iniciar scanner inteligente con OpenCV
+            await window.smartScanner.startScanning(video, overlayCanvas);
+
+            // Actualizar UI
+            document.getElementById('cameraOverlay')?.classList.add('hidden');
+            document.getElementById('cameraControls')?.classList.remove('hidden');
+            document.getElementById('startCameraBtn')?.classList.add('hidden');
+            video.classList.remove('hidden');
+            overlayCanvas.classList.remove('hidden');
+            
+            if (statusText) statusText.textContent = '📄 Busca un documento para escanear';
+
+            debug.log('Smart scanner started successfully');
+
+        } catch (error) {
+            debug.error('Failed to start smart scanner', error);
+            auth.showErrorMessage('Error al iniciar scanner inteligente: ' + error.message);
+            
+            // Fallback a cámara normal
+            await this.startFallbackCamera();
+        }
+    }
+
+    // Cámara de respaldo si el scanner inteligente falla
+    async startFallbackCamera() {
+        try {
+            debug.log('Starting fallback camera');
             
             const video = document.getElementById('expenseVideo');
             if (!video) return;
@@ -279,44 +321,60 @@ class ExpenseManager {
                 }
             });
 
-            // Mostrar controles y ocultar overlay
+            // Mostrar controles básicos
             document.getElementById('cameraOverlay')?.classList.add('hidden');
             document.getElementById('cameraControls')?.classList.remove('hidden');
             document.getElementById('startCameraBtn')?.classList.add('hidden');
             video.classList.remove('hidden');
+            
+            const statusText = document.getElementById('statusText');
+            if (statusText) statusText.textContent = '📸 Modo cámara básica - Presiona capturar';
 
         } catch (error) {
-            debug.error('Failed to start camera for expense', error);
-            auth.showErrorMessage('Error al iniciar cámara: ' + error.message);
+            debug.error('Fallback camera also failed', error);
+            auth.showErrorMessage('Error al acceder a la cámara: ' + error.message);
         }
     }
 
-    // Capturar foto
+    // Capturar con scanner inteligente
     async capturePhoto() {
         try {
-            debug.log('Capturing photo for expense');
+            debug.log('Capturing with smart scanner');
 
             if (this.isCapturing) return;
             this.isCapturing = true;
 
             // Mostrar estado de procesamiento
-            this.showProcessingState('Capturando foto...');
-
-            const photoData = await window.cameraManager.capturePhoto(0.8);
+            this.showProcessingState('📄 Capturando documento...');
             
-            // Mostrar preview
+            let photoData;
+            
+            try {
+                // Intentar captura con scanner inteligente
+                photoData = await window.smartScanner.captureDetectedDocument();
+                debug.log('Smart scanner capture successful');
+                
+            } catch (smartError) {
+                debug.warn('Smart scanner failed, using fallback', smartError);
+                
+                // Fallback a captura normal
+                this.showProcessingState('📸 Capturando con cámara básica...');
+                photoData = await window.cameraManager.capturePhoto(0.8);
+            }
+            
+            // Mostrar preview del documento capturado
             this.showPhotoPreview(photoData);
             
-            // Procesar con OCR
-            this.showProcessingState('Analizando recibo...');
+            // Procesar con OCR mejorado
+            this.showProcessingState('🔍 Leyendo texto con OCR...');
             const ocrResult = await window.ocrManager.processImage(photoData);
             
             // Mostrar datos del gasto
             this.showExpenseData(ocrResult, photoData);
             
         } catch (error) {
-            debug.error('Failed to capture photo', error);
-            auth.showErrorMessage('Error al capturar foto: ' + error.message);
+            debug.error('Failed to capture document', error);
+            auth.showErrorMessage('Error al capturar documento: ' + error.message);
             this.hideProcessingState();
         } finally {
             this.isCapturing = false;
@@ -435,16 +493,33 @@ class ExpenseManager {
         }
     }
 
-    // Detener cámara
+    // Detener scanner y cámara
     stopCamera() {
+        debug.log('Stopping smart scanner and camera');
+        
+        // Detener scanner inteligente
+        if (window.smartScanner) {
+            window.smartScanner.stopScanning();
+        }
+        
+        // Detener cámara básica
         window.cameraManager.stopCamera();
         
-        // Resetear UI
+        // Resetear UI completa
         const video = document.getElementById('expenseVideo');
         const canvas = document.getElementById('previewCanvas');
+        const overlayCanvas = document.getElementById('overlayCanvas');
+        const statusDiv = document.getElementById('scannerStatus');
         
         if (video) video.classList.add('hidden');
         if (canvas) canvas.classList.add('hidden');
+        if (overlayCanvas) {
+            overlayCanvas.classList.add('hidden');
+            // Limpiar overlay
+            const ctx = overlayCanvas.getContext('2d');
+            ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+        }
+        if (statusDiv) statusDiv.classList.add('hidden');
         
         document.getElementById('cameraControls')?.classList.add('hidden');
         document.getElementById('cameraOverlay')?.classList.remove('hidden');
