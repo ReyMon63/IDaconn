@@ -177,7 +177,199 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-    <script src="js/smart-amount-detection.js"></script>
+    
+    <!-- Smart Amount Detection incluido directamente -->
+    <script>
+        // Fallback para debug si no está disponible
+        if (typeof debug === 'undefined') {
+            window.debug = {
+                log: (...args) => console.log('[SmartAmountDetector]', ...args),
+                error: (...args) => console.error('[SmartAmountDetector]', ...args),
+                warn: (...args) => console.warn('[SmartAmountDetector]', ...args)
+            };
+        }
+
+        class SmartAmountDetector {
+            constructor() {
+                this.patterns = {
+                    contextKeywords: [
+                        { words: ['total', 'suma', 'importe'], weight: 10, radius: 80 },
+                        { words: ['subtotal', 'neto'], weight: 8, radius: 60 },
+                        { words: ['pagar', 'cobrar', 'precio'], weight: 7, radius: 50 },
+                        { words: ['cambio', 'devolucion'], weight: -5, radius: 40 },
+                        { words: ['iva', 'impuesto', 'tax'], weight: 3, radius: 30 },
+                        { words: ['descuento', 'ahorro'], weight: 2, radius: 40 }
+                    ],
+                    
+                    amountPatterns: [
+                        /\$\s*([0-9]{1,3}(?:[,]\d{3})*(?:\.\d{2})?)/g,
+                        /([0-9]{1,3}(?:[,]\d{3})*(?:\.\d{2})?)\s*pesos/gi,
+                        /([0-9]{1,3}(?:[,]\d{3})*(?:\.\d{2})?)\s*MXN/gi,
+                        /total\s*:?\s*\$?\s*([0-9]{1,3}(?:[,]\d{3})*(?:\.\d{2})?)/gi,
+                        /suma\s*:?\s*\$?\s*([0-9]{1,3}(?:[,]\d{3})*(?:\.\d{2})?)/gi,
+                        /([0-9]{1,3}(?:[,]\d{3})*\.\d{2})/g
+                    ]
+                };
+                
+                debug.log('SmartAmountDetector initialized');
+            }
+
+            analyzeAmounts(ocrText, ocrConfidence = 0.8) {
+                if (!ocrText || ocrText.trim().length === 0) {
+                    return { suggested: null, alternatives: [], confidence: 0, analysis: 'No hay texto para analizar' };
+                }
+
+                debug.log('Starting smart amount analysis');
+
+                try {
+                    // 1. Extraer todos los montos
+                    const rawAmounts = this.extractAllAmounts(ocrText);
+                    
+                    if (rawAmounts.length === 0) {
+                        return { suggested: null, alternatives: [], confidence: 0, analysis: 'No se encontraron montos en el texto' };
+                    }
+
+                    // 2. Analizar contexto de cada monto
+                    const analyzedAmounts = rawAmounts.map(amount => 
+                        this.analyzeAmountContext(amount, ocrText)
+                    );
+
+                    // 3. Calcular scores y ordenar
+                    const scoredAmounts = this.calculateScores(analyzedAmounts, ocrText);
+                    
+                    // 4. Seleccionar el mejor candidato
+                    const suggested = scoredAmounts[0];
+                    const alternatives = scoredAmounts.slice(1, 5);
+                    
+                    // 5. Calcular confianza final
+                    const confidence = Math.min(0.95, ocrConfidence * 0.8 + (suggested.totalScore / 30) * 0.2);
+                    
+                    debug.log('Smart analysis complete', {
+                        suggested: suggested.value,
+                        confidence: confidence,
+                        totalAmounts: scoredAmounts.length
+                    });
+                    
+                    return {
+                        suggested: suggested,
+                        alternatives: alternatives,
+                        confidence: confidence,
+                        analysis: `Monto sugerido: $${suggested.value.toFixed(2)} (Score: ${suggested.totalScore.toFixed(1)})`
+                    };
+
+                } catch (error) {
+                    debug.error('Error in smart amount analysis:', error);
+                    return this.basicAmountFallback(ocrText);
+                }
+            }
+
+            extractAllAmounts(text) {
+                const amounts = [];
+                const seen = new Set();
+                
+                this.patterns.amountPatterns.forEach((pattern, patternIndex) => {
+                    const matches = [...text.matchAll(pattern)];
+                    
+                    matches.forEach(match => {
+                        const cleanAmount = match[1] || match[0];
+                        const numericValue = parseFloat(cleanAmount.replace(/[,$]/g, ''));
+                        
+                        if (numericValue > 0 && numericValue < 999999 && !seen.has(numericValue)) {
+                            amounts.push({
+                                value: numericValue,
+                                originalText: match[0],
+                                cleanText: cleanAmount,
+                                position: match.index,
+                                patternType: patternIndex,
+                                context: this.extractContext(text, match.index, 100)
+                            });
+                            seen.add(numericValue);
+                        }
+                    });
+                });
+                
+                return amounts;
+            }
+
+            analyzeAmountContext(amount, fullText) {
+                let contextScore = 0;
+                let reasoningFactors = [];
+                
+                const context = amount.context.toLowerCase();
+                
+                // Analizar palabras clave en contexto
+                this.patterns.contextKeywords.forEach(keyword => {
+                    keyword.words.forEach(word => {
+                        if (context.includes(word)) {
+                            contextScore += keyword.weight;
+                            reasoningFactors.push(`Contexto "${word}" (${keyword.weight > 0 ? '+' : ''}${keyword.weight})`);
+                        }
+                    });
+                });
+                
+                return {
+                    ...amount,
+                    contextScore,
+                    reasoningFactors
+                };
+            }
+
+            calculateScores(amounts, fullText) {
+                return amounts.map(amount => {
+                    let totalScore = amount.contextScore || 0;
+                    
+                    // Bonus por posición (montos al final suelen ser totales)
+                    const textLength = fullText.length;
+                    const relativePosition = amount.position / textLength;
+                    if (relativePosition > 0.7) totalScore += 3;
+                    else if (relativePosition > 0.5) totalScore += 1;
+                    
+                    // Bonus por formato típico mexicano
+                    if (amount.originalText.includes('$') || amount.originalText.includes('.')) {
+                        totalScore += 1;
+                    }
+                    
+                    // Penalty por montos muy pequeños o muy grandes  
+                    if (amount.value < 10) totalScore -= 2;
+                    if (amount.value > 10000) totalScore -= 1;
+                    
+                    return {
+                        ...amount,
+                        totalScore
+                    };
+                }).sort((a, b) => b.totalScore - a.totalScore);
+            }
+
+            extractContext(text, position, radius) {
+                const start = Math.max(0, position - radius);
+                const end = Math.min(text.length, position + radius);
+                return text.substring(start, end);
+            }
+
+            basicAmountFallback(text) {
+                const amounts = this.extractAllAmounts(text);
+                if (amounts.length === 0) {
+                    return { suggested: null, alternatives: [], confidence: 0, analysis: 'No se encontraron montos' };
+                }
+                
+                const sorted = amounts.sort((a, b) => b.value - a.value);
+                
+                return {
+                    suggested: {
+                        ...sorted[0],
+                        totalScore: 5,
+                        confidence: 0.6,
+                        reasoningFactors: ['Modo básico: Mayor monto encontrado']
+                    },
+                    alternatives: sorted.slice(1, 4),
+                    confidence: 0.6,
+                    analysis: 'Análisis básico: Se sugiere el monto más grande encontrado'
+                };
+            }
+        }
+        
+        console.log('✅ SmartAmountDetector cargado directamente');
+    </script>
     
     <script>
         // Test básico
@@ -208,7 +400,21 @@
             
             console.log('✅ Soporte de cámara detectado');
             
-            smartAmountDetector = new SmartAmountDetector();
+            // Inicializar Smart Amount Detector
+            try {
+                if (typeof SmartAmountDetector === 'undefined') {
+                    alert('❌ SmartAmountDetector no cargado');
+                    return;
+                }
+                
+                smartAmountDetector = new SmartAmountDetector();
+                console.log('✅ SmartAmountDetector inicializado');
+            } catch (error) {
+                console.error('Error inicializando SmartAmountDetector:', error);
+                alert('Error cargando IA: ' + error.message);
+                return;
+            }
+            
             setupEventListeners();
         });
 
@@ -353,27 +559,43 @@
 
         // OCR and AI Processing
         async function processWithOCR() {
+            console.log('🤖 processWithOCR iniciado');
+            
             if (!capturedImageData) {
+                alert('❌ No hay imagen capturada');
                 showStatus('No hay imagen para procesar', 'error');
                 return;
             }
 
             try {
+                console.log('📸 Imagen disponible, iniciando OCR...');
                 showProcessing('🔍 Leyendo texto con OCR...');
 
-                // Process with Tesseract
+                // Verificar que Tesseract esté disponible
+                if (typeof Tesseract === 'undefined') {
+                    throw new Error('Tesseract no está cargado');
+                }
+
+                console.log('✅ Tesseract disponible');
+
+                // Process with Tesseract - configuración simplificada para iOS
                 const { data: { text, confidence } } = await Tesseract.recognize(
                     capturedImageData,
-                    'spa+eng',
+                    'eng', // Solo inglés para mayor compatibilidad iOS
                     {
                         logger: m => {
+                            console.log('OCR Progress:', m);
                             if (m.status === 'recognizing text') {
                                 const percent = Math.round(m.progress * 100);
                                 showProcessing(`🔍 Analizando texto... ${percent}%`);
                             }
-                        }
+                        },
+                        // Configuración específica para móviles
+                        tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK
                     }
                 );
+
+                console.log('✅ OCR completado:', { textLength: text.length, confidence });
 
                 hideProcessing();
 
@@ -387,24 +609,35 @@
                 // Show OCR results
                 showOCRResults(text, confidence);
 
+                // Verificar Smart Amount Detector
+                if (!smartAmountDetector) {
+                    console.error('❌ SmartAmountDetector no inicializado');
+                    throw new Error('Sistema de IA no disponible');
+                }
+
                 // Process with Smart Amount Detection
+                console.log('🧠 Analizando montos con IA...');
                 const amountAnalysis = smartAmountDetector.analyzeAmounts(text, confidence / 100);
-                console.log('Smart Amount Analysis:', amountAnalysis);
+                console.log('✅ Análisis IA completado:', amountAnalysis);
 
                 if (amountAnalysis.suggested) {
                     showAmountSuggestions(amountAnalysis);
                     document.getElementById('finalAmount').value = amountAnalysis.suggested.value.toFixed(2);
+                    console.log('✅ Sugerencias mostradas');
                 } else {
                     showStatus('No se pudieron detectar montos válidos', 'warning');
+                    console.log('⚠️ No se detectaron montos');
                 }
 
                 // Show results section
                 document.getElementById('resultsSection').classList.remove('hidden');
+                console.log('✅ Proceso completo exitoso');
 
             } catch (error) {
-                console.error('OCR Error:', error);
+                console.error('❌ Error completo:', error);
+                alert('Error: ' + error.message);
                 hideProcessing();
-                showStatus('Error en procesamiento OCR: ' + error.message, 'error');
+                showStatus('Error: ' + error.message, 'error');
             }
         }
 
