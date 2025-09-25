@@ -269,39 +269,156 @@ class ExpenseManager {
             debug.log('Starting smart scanner for expense');
             
             const video = document.getElementById('expenseVideo');
-            const overlayCanvas = document.getElementById('overlayCanvas');
             const statusDiv = document.getElementById('scannerStatus');
             const statusText = document.getElementById('statusText');
             
-            if (!video || !overlayCanvas) {
-                debug.error('Video or overlay canvas not found');
+            if (!video) {
+                debug.error('Video element not found');
+                auth.showErrorMessage('Error: Elemento de video no encontrado');
                 return;
             }
 
             // Mostrar estado de inicialización
-            statusDiv?.classList.remove('hidden');
-            if (statusText) statusText.textContent = '🚀 Iniciando scanner inteligente...';
+            if (statusDiv) statusDiv.classList.remove('hidden');
+            if (statusText) statusText.textContent = '🚀 Iniciando cámara...';
 
-            // Iniciar scanner inteligente con OpenCV
-            await window.smartScanner.startScanning(video, overlayCanvas);
-
-            // Actualizar UI
-            document.getElementById('cameraOverlay')?.classList.add('hidden');
-            document.getElementById('cameraControls')?.classList.remove('hidden');
-            document.getElementById('startCameraBtn')?.classList.add('hidden');
-            video.classList.remove('hidden');
-            overlayCanvas.classList.remove('hidden');
+            // Verificar disponibilidad de scanner inteligente
+            const useSmartScanner = window.smartScanner && typeof cv !== 'undefined';
             
-            if (statusText) statusText.textContent = '📄 Busca un documento para escanear';
-
-            debug.log('Smart scanner started successfully');
+            if (useSmartScanner) {
+                debug.log('Using smart scanner with OpenCV');
+                await this.startSmartScanner(video, statusText);
+            } else {
+                debug.log('OpenCV not available, using basic camera');
+                await this.startBasicCamera(video, statusText);
+            }
 
         } catch (error) {
-            debug.error('Failed to start smart scanner', error);
-            auth.showErrorMessage('Error al iniciar scanner inteligente: ' + error.message);
+            debug.error('Failed to start camera system', error);
+            auth.showErrorMessage('Error al iniciar cámara: ' + error.message);
             
-            // Fallback a cámara normal
+            // Último recurso: cámara básica
             await this.startFallbackCamera();
+        }
+    }
+
+    // Iniciar scanner inteligente con OpenCV
+    async startSmartScanner(video, statusText) {
+        try {
+            const overlayCanvas = document.getElementById('overlayCanvas');
+            
+            if (!overlayCanvas) {
+                debug.warn('Overlay canvas not found, creating one');
+                this.createOverlayCanvas();
+            }
+            
+            if (statusText) statusText.textContent = '🔍 Iniciando detección inteligente...';
+            
+            // Iniciar scanner con OpenCV
+            await window.smartScanner.startScanning(video, document.getElementById('overlayCanvas'));
+            
+            // Actualizar UI para scanner inteligente
+            this.updateUIForSmartScanner();
+            
+            if (statusText) statusText.textContent = '📄 Busca un documento para escanear';
+            
+            debug.log('Smart scanner started successfully');
+            
+        } catch (error) {
+            debug.error('Smart scanner failed, falling back to basic camera', error);
+            await this.startBasicCamera(video, statusText);
+        }
+    }
+
+    // Crear overlay canvas dinámicamente si no existe
+    createOverlayCanvas() {
+        const container = document.getElementById('cameraContainer');
+        if (!container) return;
+        
+        const overlayCanvas = document.createElement('canvas');
+        overlayCanvas.id = 'overlayCanvas';
+        overlayCanvas.className = 'absolute top-0 left-0 w-full h-full pointer-events-none hidden';
+        container.appendChild(overlayCanvas);
+        
+        debug.log('Overlay canvas created dynamically');
+    }
+
+    // Iniciar cámara básica
+    async startBasicCamera(video, statusText) {
+        try {
+            if (statusText) statusText.textContent = '📸 Iniciando cámara básica...';
+            
+            // Usar el sistema de cámara básico
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: 'environment',
+                    width: { ideal: 1280, max: 1920 },
+                    height: { ideal: 720, max: 1080 }
+                }
+            });
+            
+            video.srcObject = stream;
+            video.setAttribute('playsinline', true);
+            video.setAttribute('webkit-playsinline', true);
+            
+            await new Promise((resolve, reject) => {
+                video.onloadedmetadata = () => {
+                    video.play();
+                    resolve();
+                };
+                video.onerror = reject;
+                setTimeout(() => reject(new Error('Video load timeout')), 10000);
+            });
+            
+            // Actualizar UI para cámara básica
+            this.updateUIForBasicCamera();
+            
+            if (statusText) statusText.textContent = '📸 Cámara lista - Presiona capturar';
+            
+            debug.log('Basic camera started successfully');
+            
+        } catch (error) {
+            debug.error('Basic camera failed', error);
+            throw new Error(`Error de cámara: ${error.message}`);
+        }
+    }
+
+    // Actualizar UI para scanner inteligente
+    updateUIForSmartScanner() {
+        document.getElementById('cameraOverlay')?.classList.add('hidden');
+        document.getElementById('cameraControls')?.classList.remove('hidden');
+        document.getElementById('startCameraBtn')?.classList.add('hidden');
+        
+        const video = document.getElementById('expenseVideo');
+        const overlayCanvas = document.getElementById('overlayCanvas');
+        
+        if (video) video.classList.remove('hidden');
+        if (overlayCanvas) overlayCanvas.classList.remove('hidden');
+        
+        // Cambiar texto del botón capturar
+        const captureBtn = document.getElementById('captureBtn');
+        if (captureBtn) {
+            captureBtn.innerHTML = '<i class="fas fa-magic mr-2"></i>Capturar IA';
+        }
+    }
+
+    // Actualizar UI para cámara básica
+    updateUIForBasicCamera() {
+        document.getElementById('cameraOverlay')?.classList.add('hidden');
+        document.getElementById('cameraControls')?.classList.remove('hidden');
+        document.getElementById('startCameraBtn')?.classList.add('hidden');
+        
+        const video = document.getElementById('expenseVideo');
+        if (video) video.classList.remove('hidden');
+        
+        // Ocultar overlay canvas
+        const overlayCanvas = document.getElementById('overlayCanvas');
+        if (overlayCanvas) overlayCanvas.classList.add('hidden');
+        
+        // Cambiar texto del botón capturar
+        const captureBtn = document.getElementById('captureBtn');
+        if (captureBtn) {
+            captureBtn.innerHTML = '<i class="fas fa-camera mr-2"></i>Capturar';
         }
     }
 
