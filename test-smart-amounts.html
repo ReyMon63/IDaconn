@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba - Sistema Híbrido de Montos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-md mx-auto bg-white rounded-lg shadow-lg p-6">
+        <h1 class="text-2xl font-bold mb-6 text-center">🤖 Prueba Sistema Híbrido</h1>
+        
+        <!-- Texto de OCR simulado -->
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Texto OCR simulado:</label>
+            <textarea id="ocrText" rows="4" class="w-full px-3 py-2 border rounded-lg text-sm"
+                placeholder="Pega aquí texto de un recibo para probar...">RECIBO DE COMPRA
+FARMACIA SAN PABLO
+RFC: FSP123456789
+FECHA: 25/09/2024
+HORA: 14:30
+
+PRODUCTOS:
+MEDICAMENTO A          $150.00
+MEDICAMENTO B          $75.50
+DESCUENTO              -$15.00
+                      ----------
+SUBTOTAL:             $210.50
+IVA (16%):             $33.68
+                      ----------
+TOTAL:                $244.18
+
+EFECTIVO:             $250.00
+CAMBIO:                $5.82
+
+GRACIAS POR SU COMPRA</textarea>
+        </div>
+
+        <!-- Botón para procesar -->
+        <button id="processBtn" class="w-full bg-blue-600 text-white py-3 rounded-lg mb-6 hover:bg-blue-700 transition-colors">
+            <i class="fas fa-magic mr-2"></i>Analizar Montos con IA
+        </button>
+
+        <!-- Resultado del análisis -->
+        <div id="result" class="hidden">
+            <!-- Sugerencias de IA -->
+            <div id="amountSuggestions" class="mb-3 space-y-2">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-blue-800">🤖 IA Sugiere:</span>
+                        <span id="aiConfidence" class="text-xs text-blue-600">95%</span>
+                    </div>
+                    <button type="button" id="suggestedAmount" 
+                            class="w-full text-left p-2 bg-white border border-blue-300 rounded hover:bg-blue-50 transition-colors">
+                        <span class="text-lg font-bold text-blue-900">$0.00</span>
+                    </button>
+                </div>
+                
+                <!-- Alternativas -->
+                <div id="alternativeAmounts" class="hidden">
+                    <div class="text-xs text-gray-600 mb-1">Otras opciones detectadas:</div>
+                    <div id="alternatives" class="grid grid-cols-2 gap-1"></div>
+                </div>
+                
+                <button type="button" id="showAlternatives" 
+                        class="text-xs text-blue-600 hover:text-blue-800 underline">
+                    Ver más opciones detectadas
+                </button>
+            </div>
+            
+            <!-- Campo manual -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Monto final (MXN):</label>
+                <input type="number" id="expenseAmount" step="0.01" min="0" 
+                       class="w-full px-4 py-3 border rounded-lg text-base" 
+                       placeholder="0.00">
+                <div class="text-xs text-gray-500 mt-1">
+                    💡 Puedes editar el monto manualmente si es necesario
+                </div>
+            </div>
+
+            <!-- Debug info -->
+            <div id="debugInfo" class="bg-gray-50 rounded-lg p-3 text-xs">
+                <strong>Debug Info:</strong>
+                <pre id="debugOutput" class="mt-2 text-xs"></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/smart-amount-detection.js"></script>
+    <script>
+        // Inicializar detector
+        const smartAmountDetector = new SmartAmountDetector();
+        
+        // Event listeners
+        document.getElementById('processBtn').addEventListener('click', processOCRText);
+        
+        // Manejar clics en sugerencias
+        document.addEventListener('click', (e) => {
+            if (e.target.id === 'suggestedAmount' || e.target.closest('#suggestedAmount')) {
+                const button = e.target.closest('#suggestedAmount') || e.target;
+                const amount = button.querySelector('span')?.textContent.replace('$', '') || '0';
+                document.getElementById('expenseAmount').value = amount;
+                
+                // Feedback visual
+                button.classList.add('bg-green-100', 'border-green-400');
+                setTimeout(() => {
+                    button.classList.remove('bg-green-100', 'border-green-400');
+                }, 500);
+            }
+        });
+
+        // Mostrar/ocultar alternativas
+        document.addEventListener('click', (e) => {
+            if (e.target.id === 'showAlternatives') {
+                const alternatives = document.getElementById('alternativeAmounts');
+                const button = e.target;
+                
+                if (alternatives.classList.contains('hidden')) {
+                    alternatives.classList.remove('hidden');
+                    button.textContent = 'Ocultar alternativas';
+                } else {
+                    alternatives.classList.add('hidden');
+                    button.textContent = 'Ver más opciones detectadas';
+                }
+            }
+        });
+
+        // Clics en alternativas
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('alternative-amount')) {
+                const amount = e.target.textContent.replace('$', '');
+                document.getElementById('expenseAmount').value = amount;
+                
+                // Feedback visual
+                e.target.classList.add('bg-green-100', 'border-green-400');
+                setTimeout(() => {
+                    e.target.classList.remove('bg-green-100', 'border-green-400');
+                }, 500);
+            }
+        });
+        
+        // Auto-procesar al cargar para prueba
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                processOCRText();
+            }, 1000);
+        });
+
+        // Función principal de procesamiento
+        function processOCRText() {
+            const ocrText = document.getElementById('ocrText').value;
+            if (!ocrText.trim()) {
+                alert('Por favor ingresa texto OCR para analizar');
+                return;
+            }
+
+            console.log('Procesando texto OCR:', ocrText);
+
+            try {
+                // Analizar con el sistema híbrido
+                const analysis = smartAmountDetector.analyzeAmounts(ocrText, 0.85);
+                console.log('Resultado del análisis:', analysis);
+
+                // Mostrar resultados
+                showResults(analysis);
+                
+                // Mostrar debug info
+                document.getElementById('debugOutput').textContent = JSON.stringify(analysis, null, 2);
+
+            } catch (error) {
+                console.error('Error en análisis:', error);
+                alert('Error al analizar: ' + error.message);
+            }
+        }
+
+        // Mostrar resultados en la UI
+        function showResults(analysis) {
+            const resultDiv = document.getElementById('result');
+            const suggestedButton = document.getElementById('suggestedAmount');
+            const confidenceSpan = document.getElementById('aiConfidence');
+            const alternativesDiv = document.getElementById('alternatives');
+            const showAlternativesBtn = document.getElementById('showAlternatives');
+
+            if (analysis.suggested) {
+                // Mostrar sugerencia principal
+                const suggested = analysis.suggested;
+                suggestedButton.querySelector('span').textContent = `$${suggested.value.toFixed(2)}`;
+                confidenceSpan.textContent = `${Math.round(analysis.confidence * 100)}%`;
+
+                // Pre-llenar campo manual
+                document.getElementById('expenseAmount').value = suggested.value.toFixed(2);
+
+                // Crear alternativas
+                if (analysis.alternatives && analysis.alternatives.length > 0) {
+                    alternativesDiv.innerHTML = '';
+                    
+                    analysis.alternatives.forEach((alt, index) => {
+                        const button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'alternative-amount text-xs p-1 bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 transition-colors';
+                        button.textContent = `$${alt.value.toFixed(2)}`;
+                        button.title = `Confianza: ${Math.round(alt.totalScore || 0)}%`;
+                        alternativesDiv.appendChild(button);
+                    });
+
+                    showAlternativesBtn.classList.remove('hidden');
+                } else {
+                    showAlternativesBtn.classList.add('hidden');
+                }
+
+                // Mostrar sección de resultados
+                resultDiv.classList.remove('hidden');
+            } else {
+                alert('No se pudieron detectar montos en el texto OCR');
+            }
+        }
+    </script>
+</body>
+</html>
