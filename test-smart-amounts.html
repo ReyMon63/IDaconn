@@ -3,117 +3,422 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prueba - Sistema Híbrido de Montos</title>
+    <title>🤖 Demo Cámara + IA Híbrida</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
-</head>
-<body class="bg-gray-100 p-8">
-    <div class="max-w-md mx-auto bg-white rounded-lg shadow-lg p-6">
-        <h1 class="text-2xl font-bold mb-6 text-center">🤖 Prueba Sistema Híbrido</h1>
+    <style>
+        .camera-container {
+            position: relative;
+            background: #f3f4f6;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
         
-        <!-- Texto de OCR simulado -->
-        <div class="mb-6">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Texto OCR simulado:</label>
-            <textarea id="ocrText" rows="4" class="w-full px-3 py-2 border rounded-lg text-sm"
-                placeholder="Pega aquí texto de un recibo para probar...">RECIBO DE COMPRA
-FARMACIA SAN PABLO
-RFC: FSP123456789
-FECHA: 25/09/2024
-HORA: 14:30
-
-PRODUCTOS:
-MEDICAMENTO A          $150.00
-MEDICAMENTO B          $75.50
-DESCUENTO              -$15.00
-                      ----------
-SUBTOTAL:             $210.50
-IVA (16%):             $33.68
-                      ----------
-TOTAL:                $244.18
-
-EFECTIVO:             $250.00
-CAMBIO:                $5.82
-
-GRACIAS POR SU COMPRA</textarea>
+        .camera-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            bottom: 20px;
+            border: 2px dashed #3b82f6;
+            border-radius: 0.5rem;
+            pointer-events: none;
+        }
+        
+        .btn-camera {
+            padding: 12px 24px;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            touch-action: manipulation;
+        }
+        
+        .processing-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
+    <div class="max-w-md mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
+        
+        <!-- Header -->
+        <div class="bg-blue-600 text-white p-4 text-center">
+            <h1 class="text-xl font-bold">📷 + 🤖 Demo Real</h1>
+            <p class="text-sm opacity-90">Cámara + OCR + IA Híbrida</p>
         </div>
 
-        <!-- Botón para procesar -->
-        <button id="processBtn" class="w-full bg-blue-600 text-white py-3 rounded-lg mb-6 hover:bg-blue-700 transition-colors">
-            <i class="fas fa-magic mr-2"></i>Analizar Montos con IA
-        </button>
-
-        <!-- Resultado del análisis -->
-        <div id="result" class="hidden">
-            <!-- Sugerencias de IA -->
-            <div id="amountSuggestions" class="mb-3 space-y-2">
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-sm font-medium text-blue-800">🤖 IA Sugiere:</span>
-                        <span id="aiConfidence" class="text-xs text-blue-600">95%</span>
+        <!-- Cámara Section -->
+        <div class="p-4">
+            <div id="cameraSection">
+                <h2 class="text-lg font-semibold mb-3">1. Capturar Ticket</h2>
+                
+                <!-- Camera Container -->
+                <div class="camera-container mb-4" style="height: 250px;">
+                    <video id="video" class="w-full h-full object-cover hidden" autoplay playsinline></video>
+                    <canvas id="canvas" class="w-full h-full object-cover hidden"></canvas>
+                    
+                    <!-- Placeholder -->
+                    <div id="placeholder" class="w-full h-full flex items-center justify-center text-gray-500">
+                        <div class="text-center">
+                            <i class="fas fa-camera text-4xl mb-2"></i>
+                            <p class="text-sm">Presiona "Iniciar Cámara"</p>
+                        </div>
                     </div>
-                    <button type="button" id="suggestedAmount" 
-                            class="w-full text-left p-2 bg-white border border-blue-300 rounded hover:bg-blue-50 transition-colors">
-                        <span class="text-lg font-bold text-blue-900">$0.00</span>
+                    
+                    <!-- Camera overlay -->
+                    <div class="camera-overlay"></div>
+                    
+                    <!-- Processing overlay -->
+                    <div id="processingOverlay" class="processing-overlay hidden">
+                        <div class="text-center">
+                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+                            <p id="processingText">Procesando...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Camera Controls -->
+                <div id="cameraControls" class="grid grid-cols-1 gap-2 mb-4">
+                    <button id="startCamera" class="btn-camera bg-blue-600 hover:bg-blue-700 text-white">
+                        <i class="fas fa-camera mr-2"></i>Iniciar Cámara
+                    </button>
+                </div>
+
+                <div id="activeControls" class="hidden grid grid-cols-2 gap-2 mb-4">
+                    <button id="capturePhoto" class="btn-camera bg-green-600 hover:bg-green-700 text-white">
+                        <i class="fas fa-camera-retro mr-2"></i>Capturar
+                    </button>
+                    <button id="switchCamera" class="btn-camera bg-gray-600 hover:bg-gray-700 text-white">
+                        <i class="fas fa-sync-alt mr-2"></i>Cambiar
+                    </button>
+                </div>
+
+                <div id="retakeControls" class="hidden grid grid-cols-2 gap-2 mb-4">
+                    <button id="retakePhoto" class="btn-camera bg-yellow-600 hover:bg-yellow-700 text-white">
+                        <i class="fas fa-redo mr-2"></i>Repetir
+                    </button>
+                    <button id="processOCR" class="btn-camera bg-purple-600 hover:bg-purple-700 text-white">
+                        <i class="fas fa-magic mr-2"></i>Analizar con IA
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="resultsSection" class="hidden">
+                <h2 class="text-lg font-semibold mb-3">2. 🤖 IA Detectó:</h2>
+                
+                <!-- OCR Raw Results -->
+                <div id="ocrResults" class="bg-gray-50 rounded-lg p-3 mb-4 hidden">
+                    <div class="text-xs text-gray-600 mb-1">Texto detectado:</div>
+                    <div id="ocrText" class="text-xs font-mono max-h-20 overflow-y-auto"></div>
+                </div>
+
+                <!-- Smart Amount Suggestions -->
+                <div id="amountSuggestions" class="hidden mb-4 space-y-2">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-blue-800">🤖 IA Sugiere:</span>
+                            <span id="aiConfidence" class="text-xs text-blue-600">95%</span>
+                        </div>
+                        <button type="button" id="suggestedAmount" 
+                                class="w-full text-left p-2 bg-white border border-blue-300 rounded hover:bg-blue-50 transition-colors">
+                            <span class="text-lg font-bold text-blue-900">$0.00</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Alternativas -->
+                    <div id="alternativeAmounts" class="hidden">
+                        <div class="text-xs text-gray-600 mb-1">Otras opciones detectadas:</div>
+                        <div id="alternatives" class="grid grid-cols-2 gap-1"></div>
+                    </div>
+                    
+                    <button type="button" id="showAlternatives" 
+                            class="text-xs text-blue-600 hover:text-blue-800 underline">
+                        Ver más opciones detectadas
                     </button>
                 </div>
                 
-                <!-- Alternativas -->
-                <div id="alternativeAmounts" class="hidden">
-                    <div class="text-xs text-gray-600 mb-1">Otras opciones detectadas:</div>
-                    <div id="alternatives" class="grid grid-cols-2 gap-1"></div>
+                <!-- Final Amount Input -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Monto Final:</label>
+                    <input type="number" id="finalAmount" step="0.01" min="0" 
+                           class="w-full px-3 py-2 border rounded-lg text-base" 
+                           placeholder="0.00">
+                    <div class="text-xs text-gray-500 mt-1">
+                        💡 Editado automáticamente por IA - puedes corregir
+                    </div>
                 </div>
-                
-                <button type="button" id="showAlternatives" 
-                        class="text-xs text-blue-600 hover:text-blue-800 underline">
-                    Ver más opciones detectadas
-                </button>
-            </div>
-            
-            <!-- Campo manual -->
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Monto final (MXN):</label>
-                <input type="number" id="expenseAmount" step="0.01" min="0" 
-                       class="w-full px-4 py-3 border rounded-lg text-base" 
-                       placeholder="0.00">
-                <div class="text-xs text-gray-500 mt-1">
-                    💡 Puedes editar el monto manualmente si es necesario
+
+                <!-- Action Buttons -->
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="resetDemo" class="btn-camera bg-gray-500 hover:bg-gray-600 text-white">
+                        <i class="fas fa-refresh mr-2"></i>Nuevo Ticket
+                    </button>
+                    <button id="saveAmount" class="btn-camera bg-green-600 hover:bg-green-700 text-white">
+                        <i class="fas fa-check mr-2"></i>Confirmar
+                    </button>
                 </div>
             </div>
 
-            <!-- Debug info -->
-            <div id="debugInfo" class="bg-gray-50 rounded-lg p-3 text-xs">
-                <strong>Debug Info:</strong>
-                <pre id="debugOutput" class="mt-2 text-xs"></pre>
-            </div>
+            <!-- Status Messages -->
+            <div id="statusMessage" class="hidden mt-4 p-3 rounded-lg"></div>
         </div>
     </div>
 
     <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="js/smart-amount-detection.js"></script>
+    
     <script>
-        // Inicializar detector
-        const smartAmountDetector = new SmartAmountDetector();
-        
-        // Event listeners
-        document.getElementById('processBtn').addEventListener('click', processOCRText);
-        
-        // Manejar clics en sugerencias
-        document.addEventListener('click', (e) => {
+        // Global variables
+        let videoStream = null;
+        let currentFacingMode = 'environment';
+        let smartAmountDetector = null;
+        let capturedImageData = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Demo inicializado');
+            smartAmountDetector = new SmartAmountDetector();
+            setupEventListeners();
+        });
+
+        // Event Listeners
+        function setupEventListeners() {
+            document.getElementById('startCamera').addEventListener('click', startCamera);
+            document.getElementById('capturePhoto').addEventListener('click', capturePhoto);
+            document.getElementById('switchCamera').addEventListener('click', switchCamera);
+            document.getElementById('retakePhoto').addEventListener('click', retakePhoto);
+            document.getElementById('processOCR').addEventListener('click', processWithOCR);
+            document.getElementById('resetDemo').addEventListener('click', resetDemo);
+            document.getElementById('saveAmount').addEventListener('click', saveAmount);
+
+            // Smart amount suggestions
+            document.addEventListener('click', handleSmartAmountClicks);
+        }
+
+        // Camera Functions
+        async function startCamera() {
+            try {
+                showStatus('Iniciando cámara...', 'info');
+                
+                const constraints = {
+                    video: {
+                        facingMode: currentFacingMode,
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                };
+
+                videoStream = await navigator.mediaDevices.getUserMedia(constraints);
+                const video = document.getElementById('video');
+                video.srcObject = videoStream;
+
+                // Show video and controls
+                document.getElementById('placeholder').classList.add('hidden');
+                video.classList.remove('hidden');
+                document.getElementById('cameraControls').classList.add('hidden');
+                document.getElementById('activeControls').classList.remove('hidden');
+
+                showStatus('Cámara activa - Captura tu ticket', 'success');
+                
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                showStatus('Error al acceder a la cámara: ' + error.message, 'error');
+            }
+        }
+
+        async function capturePhoto() {
+            try {
+                const video = document.getElementById('video');
+                const canvas = document.getElementById('canvas');
+                const ctx = canvas.getContext('2d');
+
+                // Set canvas size to video dimensions
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+
+                // Draw video frame to canvas
+                ctx.drawImage(video, 0, 0);
+
+                // Stop video stream
+                if (videoStream) {
+                    videoStream.getTracks().forEach(track => track.stop());
+                    videoStream = null;
+                }
+
+                // Show canvas, hide video
+                video.classList.add('hidden');
+                canvas.classList.remove('hidden');
+
+                // Update controls
+                document.getElementById('activeControls').classList.add('hidden');
+                document.getElementById('retakeControls').classList.remove('hidden');
+
+                // Store image data
+                capturedImageData = canvas.toDataURL('image/jpeg', 0.8);
+
+                showStatus('Foto capturada - Presiona "Analizar con IA"', 'success');
+                
+            } catch (error) {
+                console.error('Error capturing photo:', error);
+                showStatus('Error al capturar foto: ' + error.message, 'error');
+            }
+        }
+
+        async function switchCamera() {
+            currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+            
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                await startCamera();
+            }
+        }
+
+        function retakePhoto() {
+            // Hide results and canvas
+            document.getElementById('resultsSection').classList.add('hidden');
+            document.getElementById('canvas').classList.add('hidden');
+            
+            // Show controls to start camera again
+            document.getElementById('retakeControls').classList.add('hidden');
+            document.getElementById('cameraControls').classList.remove('hidden');
+            document.getElementById('placeholder').classList.remove('hidden');
+
+            capturedImageData = null;
+            showStatus('Listo para nueva captura', 'info');
+        }
+
+        // OCR and AI Processing
+        async function processWithOCR() {
+            if (!capturedImageData) {
+                showStatus('No hay imagen para procesar', 'error');
+                return;
+            }
+
+            try {
+                showProcessing('🔍 Leyendo texto con OCR...');
+
+                // Process with Tesseract
+                const { data: { text, confidence } } = await Tesseract.recognize(
+                    capturedImageData,
+                    'spa+eng',
+                    {
+                        logger: m => {
+                            if (m.status === 'recognizing text') {
+                                const percent = Math.round(m.progress * 100);
+                                showProcessing(`🔍 Analizando texto... ${percent}%`);
+                            }
+                        }
+                    }
+                );
+
+                hideProcessing();
+
+                console.log('OCR Result:', { text, confidence });
+
+                if (!text.trim()) {
+                    showStatus('No se detectó texto en la imagen', 'error');
+                    return;
+                }
+
+                // Show OCR results
+                showOCRResults(text, confidence);
+
+                // Process with Smart Amount Detection
+                const amountAnalysis = smartAmountDetector.analyzeAmounts(text, confidence / 100);
+                console.log('Smart Amount Analysis:', amountAnalysis);
+
+                if (amountAnalysis.suggested) {
+                    showAmountSuggestions(amountAnalysis);
+                    document.getElementById('finalAmount').value = amountAnalysis.suggested.value.toFixed(2);
+                } else {
+                    showStatus('No se pudieron detectar montos válidos', 'warning');
+                }
+
+                // Show results section
+                document.getElementById('resultsSection').classList.remove('hidden');
+
+            } catch (error) {
+                console.error('OCR Error:', error);
+                hideProcessing();
+                showStatus('Error en procesamiento OCR: ' + error.message, 'error');
+            }
+        }
+
+        // UI Helper Functions
+        function showProcessing(message) {
+            document.getElementById('processingText').textContent = message;
+            document.getElementById('processingOverlay').classList.remove('hidden');
+        }
+
+        function hideProcessing() {
+            document.getElementById('processingOverlay').classList.add('hidden');
+        }
+
+        function showOCRResults(text, confidence) {
+            document.getElementById('ocrText').textContent = text.substring(0, 300) + '...';
+            document.getElementById('ocrResults').classList.remove('hidden');
+        }
+
+        function showAmountSuggestions(analysis) {
+            const suggestionsDiv = document.getElementById('amountSuggestions');
+            const suggestedButton = document.getElementById('suggestedAmount');
+            const confidenceSpan = document.getElementById('aiConfidence');
+            const alternativesDiv = document.getElementById('alternatives');
+            const showAlternativesBtn = document.getElementById('showAlternatives');
+
+            // Show main suggestion
+            const suggested = analysis.suggested;
+            suggestedButton.querySelector('span').textContent = `$${suggested.value.toFixed(2)}`;
+            confidenceSpan.textContent = `${Math.round(analysis.confidence * 100)}%`;
+
+            // Create alternatives
+            if (analysis.alternatives && analysis.alternatives.length > 0) {
+                alternativesDiv.innerHTML = '';
+                
+                analysis.alternatives.forEach((alt, index) => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'alternative-amount text-xs p-1 bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 transition-colors';
+                    button.textContent = `$${alt.value.toFixed(2)}`;
+                    button.title = `Confianza: ${Math.round(alt.totalScore || 0)}%`;
+                    alternativesDiv.appendChild(button);
+                });
+
+                showAlternativesBtn.classList.remove('hidden');
+            } else {
+                showAlternativesBtn.classList.add('hidden');
+            }
+
+            suggestionsDiv.classList.remove('hidden');
+        }
+
+        function handleSmartAmountClicks(e) {
+            // Main suggestion click
             if (e.target.id === 'suggestedAmount' || e.target.closest('#suggestedAmount')) {
                 const button = e.target.closest('#suggestedAmount') || e.target;
                 const amount = button.querySelector('span')?.textContent.replace('$', '') || '0';
-                document.getElementById('expenseAmount').value = amount;
+                document.getElementById('finalAmount').value = amount;
                 
-                // Feedback visual
+                // Visual feedback
                 button.classList.add('bg-green-100', 'border-green-400');
                 setTimeout(() => {
                     button.classList.remove('bg-green-100', 'border-green-400');
                 }, 500);
             }
-        });
 
-        // Mostrar/ocultar alternativas
-        document.addEventListener('click', (e) => {
+            // Show alternatives toggle
             if (e.target.id === 'showAlternatives') {
                 const alternatives = document.getElementById('alternativeAmounts');
                 const button = e.target;
@@ -126,95 +431,75 @@ GRACIAS POR SU COMPRA</textarea>
                     button.textContent = 'Ver más opciones detectadas';
                 }
             }
-        });
 
-        // Clics en alternativas
-        document.addEventListener('click', (e) => {
+            // Alternative amount clicks
             if (e.target.classList.contains('alternative-amount')) {
                 const amount = e.target.textContent.replace('$', '');
-                document.getElementById('expenseAmount').value = amount;
+                document.getElementById('finalAmount').value = amount;
                 
-                // Feedback visual
+                // Visual feedback
                 e.target.classList.add('bg-green-100', 'border-green-400');
                 setTimeout(() => {
                     e.target.classList.remove('bg-green-100', 'border-green-400');
                 }, 500);
             }
-        });
-        
-        // Auto-procesar al cargar para prueba
-        window.addEventListener('load', () => {
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.className = `mt-4 p-3 rounded-lg ${getStatusClass(type)}`;
+            statusDiv.textContent = message;
+            statusDiv.classList.remove('hidden');
+            
+            // Auto hide after 3 seconds
             setTimeout(() => {
-                processOCRText();
-            }, 1000);
-        });
+                statusDiv.classList.add('hidden');
+            }, 3000);
+        }
 
-        // Función principal de procesamiento
-        function processOCRText() {
-            const ocrText = document.getElementById('ocrText').value;
-            if (!ocrText.trim()) {
-                alert('Por favor ingresa texto OCR para analizar');
-                return;
-            }
-
-            console.log('Procesando texto OCR:', ocrText);
-
-            try {
-                // Analizar con el sistema híbrido
-                const analysis = smartAmountDetector.analyzeAmounts(ocrText, 0.85);
-                console.log('Resultado del análisis:', analysis);
-
-                // Mostrar resultados
-                showResults(analysis);
-                
-                // Mostrar debug info
-                document.getElementById('debugOutput').textContent = JSON.stringify(analysis, null, 2);
-
-            } catch (error) {
-                console.error('Error en análisis:', error);
-                alert('Error al analizar: ' + error.message);
+        function getStatusClass(type) {
+            switch (type) {
+                case 'success': return 'bg-green-100 text-green-800 border border-green-200';
+                case 'error': return 'bg-red-100 text-red-800 border border-red-200';
+                case 'warning': return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
+                default: return 'bg-blue-100 text-blue-800 border border-blue-200';
             }
         }
 
-        // Mostrar resultados en la UI
-        function showResults(analysis) {
-            const resultDiv = document.getElementById('result');
-            const suggestedButton = document.getElementById('suggestedAmount');
-            const confidenceSpan = document.getElementById('aiConfidence');
-            const alternativesDiv = document.getElementById('alternatives');
-            const showAlternativesBtn = document.getElementById('showAlternatives');
+        function resetDemo() {
+            // Stop any active streams
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
 
-            if (analysis.suggested) {
-                // Mostrar sugerencia principal
-                const suggested = analysis.suggested;
-                suggestedButton.querySelector('span').textContent = `$${suggested.value.toFixed(2)}`;
-                confidenceSpan.textContent = `${Math.round(analysis.confidence * 100)}%`;
+            // Reset UI
+            document.getElementById('video').classList.add('hidden');
+            document.getElementById('canvas').classList.add('hidden');
+            document.getElementById('placeholder').classList.remove('hidden');
+            document.getElementById('resultsSection').classList.add('hidden');
+            document.getElementById('activeControls').classList.add('hidden');
+            document.getElementById('retakeControls').classList.add('hidden');
+            document.getElementById('cameraControls').classList.remove('hidden');
+            document.getElementById('amountSuggestions').classList.add('hidden');
+            document.getElementById('ocrResults').classList.add('hidden');
 
-                // Pre-llenar campo manual
-                document.getElementById('expenseAmount').value = suggested.value.toFixed(2);
+            // Clear data
+            capturedImageData = null;
+            document.getElementById('finalAmount').value = '';
 
-                // Crear alternativas
-                if (analysis.alternatives && analysis.alternatives.length > 0) {
-                    alternativesDiv.innerHTML = '';
-                    
-                    analysis.alternatives.forEach((alt, index) => {
-                        const button = document.createElement('button');
-                        button.type = 'button';
-                        button.className = 'alternative-amount text-xs p-1 bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 transition-colors';
-                        button.textContent = `$${alt.value.toFixed(2)}`;
-                        button.title = `Confianza: ${Math.round(alt.totalScore || 0)}%`;
-                        alternativesDiv.appendChild(button);
-                    });
+            showStatus('Demo reiniciado - Listo para nuevo ticket', 'info');
+        }
 
-                    showAlternativesBtn.classList.remove('hidden');
-                } else {
-                    showAlternativesBtn.classList.add('hidden');
-                }
-
-                // Mostrar sección de resultados
-                resultDiv.classList.remove('hidden');
+        function saveAmount() {
+            const amount = document.getElementById('finalAmount').value;
+            if (amount && parseFloat(amount) > 0) {
+                showStatus(`💰 Monto confirmado: $${parseFloat(amount).toFixed(2)}`, 'success');
+                setTimeout(() => {
+                    resetDemo();
+                }, 2000);
             } else {
-                alert('No se pudieron detectar montos en el texto OCR');
+                showStatus('Por favor ingresa un monto válido', 'error');
             }
         }
     </script>
