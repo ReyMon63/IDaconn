@@ -180,6 +180,9 @@
     <script src="js/smart-amount-detection.js"></script>
     
     <script>
+        // Test básico
+        alert('🧪 JavaScript está funcionando');
+        
         // Global variables
         let videoStream = null;
         let currentFacingMode = 'environment';
@@ -188,6 +191,8 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
+            alert('✅ DOM cargado');
+            console.log('Demo inicializado');
             console.log('Demo inicializado');
             
             // Debug camera support
@@ -218,6 +223,7 @@
             }
             
             startBtn.addEventListener('click', (e) => {
+                alert('👆 BOTÓN TOCADO!');
                 console.log('👆 Click detectado en startCamera');
                 e.preventDefault();
                 startCamera();
