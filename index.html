@@ -414,11 +414,30 @@
     <script>
         // Callback cuando OpenCV esté listo
         function onOpenCvReady() {
-            console.log('OpenCV.js is ready');
-            if (window.smartScanner) {
-                window.smartScanner.onOpenCvReady();
+            console.log('OpenCV.js loaded successfully');
+            try {
+                if (window.smartScanner) {
+                    window.smartScanner.onOpenCvReady();
+                } else {
+                    console.warn('SmartScanner not yet available, will retry...');
+                    // Reintentar después de que todos los scripts carguen
+                    setTimeout(() => {
+                        if (window.smartScanner) {
+                            window.smartScanner.onOpenCvReady();
+                        }
+                    }, 1000);
+                }
+            } catch (error) {
+                console.error('Error initializing OpenCV:', error);
             }
         }
+
+        // Fallback si OpenCV no carga en 10 segundos
+        setTimeout(() => {
+            if (typeof cv === 'undefined') {
+                console.warn('OpenCV failed to load within 10 seconds - app will use fallback mode');
+            }
+        }, 10000);
     </script>
     
     <!-- Service Worker Registration -->
