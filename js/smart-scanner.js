@@ -26,11 +26,29 @@ class SmartScanner {
 
     // Callback cuando OpenCV está listo
     onOpenCvReady() {
-        this.isOpenCvReady = typeof cv !== 'undefined';
-        debug.log('OpenCV ready status:', this.isOpenCvReady);
-        
-        if (this.isOpenCvReady) {
-            this.initializeCanvases();
+        try {
+            this.isOpenCvReady = typeof cv !== 'undefined' && cv.Mat !== undefined;
+            debug.log('OpenCV ready status:', this.isOpenCvReady);
+            
+            if (this.isOpenCvReady) {
+                // Verificar funciones críticas de OpenCV
+                const requiredFunctions = ['imread', 'cvtColor', 'findContours', 'approxPolyDP'];
+                const missing = requiredFunctions.filter(fn => typeof cv[fn] !== 'function');
+                
+                if (missing.length > 0) {
+                    debug.error('OpenCV missing required functions:', missing);
+                    this.isOpenCvReady = false;
+                } else {
+                    debug.log('OpenCV fully loaded with all required functions');
+                    this.initializeCanvases();
+                }
+            } else {
+                debug.warn('OpenCV not available - will use fallback detection');
+            }
+            
+        } catch (error) {
+            debug.error('Error checking OpenCV readiness', error);
+            this.isOpenCvReady = false;
         }
     }
 
@@ -52,24 +70,54 @@ class SmartScanner {
             this.video = videoElement;
             this.overlayCanvas = overlayCanvasElement;
             
-            if (!this.isOpenCvReady) {
-                debug.warn('OpenCV not ready, using fallback detection');
+            if (!videoElement) {
+                throw new Error('Video element is required');
             }
             
-            // Iniciar cámara
+            if (!this.isOpenCvReady) {
+                debug.warn('OpenCV not ready, will use fallback detection');
+            }
+            
+            // Verificar permisos de cámara primero
+            const permission = await this.checkCameraPermission();
+            if (permission !== 'granted') {
+                throw new Error('Permisos de cámara denegados');
+            }
+            
+            // Iniciar cámara con configuración optimizada
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: {
-                    facingMode: 'environment',
-                    width: { ideal: 1280, max: 1920 },
-                    height: { ideal: 720, max: 1080 }
+                    facingMode: { ideal: 'environment' },
+                    width: { ideal: 1280, min: 640, max: 1920 },
+                    height: { ideal: 720, min: 480, max: 1080 },
+                    frameRate: { ideal: 30, max: 60 }
                 }
             });
             
             this.video.srcObject = stream;
-            this.video.play();
+            this.video.setAttribute('playsinline', true);
+            this.video.setAttribute('webkit-playsinline', true);
+            
+            // Esperar a que el video esté listo
+            await new Promise((resolve, reject) => {
+                this.video.onloadedmetadata = () => {
+                    this.video.play().then(resolve).catch(reject);
+                };
+                this.video.onerror = () => reject(new Error('Error al cargar video'));
+                
+                // Timeout de seguridad
+                setTimeout(() => reject(new Error('Timeout al cargar video')), 15000);
+            });
+            
+            debug.log('Video stream established', {
+                width: this.video.videoWidth,
+                height: this.video.videoHeight
+            });
             
             // Configurar overlay canvas
-            this.setupOverlayCanvas();
+            if (overlayCanvasElement) {
+                this.setupOverlayCanvas();
+            }
             
             // Iniciar detección continua
             this.startContinuousDetection();
@@ -78,7 +126,53 @@ class SmartScanner {
             
         } catch (error) {
             debug.error('Failed to start smart scanning', error);
-            throw error;
+            
+            // Limpiar recursos si hay error
+            this.cleanup();
+            
+            // Re-lanzar con mensaje más descriptivo
+            if (error.name === 'NotAllowedError') {
+                throw new Error('Permisos de cámara denegados. Por favor permite el acceso a la cámara.');
+            } else if (error.name === 'NotFoundError') {
+                throw new Error('No se encontró cámara disponible.');
+            } else if (error.name === 'NotReadableError') {
+                throw new Error('Cámara en uso por otra aplicación.');
+            } else {
+                throw new Error(`Error de cámara: ${error.message}`);
+            }
+        }
+    }
+
+    // Verificar permisos de cámara
+    async checkCameraPermission() {
+        try {
+            if (!navigator.permissions) {
+                debug.warn('Permissions API not supported');
+                return 'unknown';
+            }
+
+            const permission = await navigator.permissions.query({ name: 'camera' });
+            debug.log('Camera permission status:', permission.state);
+            return permission.state;
+
+        } catch (error) {
+            debug.warn('Failed to check camera permissions', error);
+            return 'unknown';
+        }
+    }
+
+    // Limpiar recursos
+    cleanup() {
+        if (this.video && this.video.srcObject) {
+            this.video.srcObject.getTracks().forEach(track => track.stop());
+            this.video.srcObject = null;
+        }
+        
+        this.isCapturing = false;
+        
+        if (this.detectionTimeout) {
+            clearTimeout(this.detectionTimeout);
+            this.detectionTimeout = null;
         }
     }
 
