@@ -89,25 +89,25 @@
 
                 <!-- Camera Controls -->
                 <div id="cameraControls" class="grid grid-cols-1 gap-2 mb-4">
-                    <button id="startCamera" class="btn-camera bg-blue-600 hover:bg-blue-700 text-white">
+                    <button id="startCamera" onclick="startCameraDirectly()" class="btn-camera bg-blue-600 hover:bg-blue-700 text-white">
                         <i class="fas fa-camera mr-2"></i>Iniciar Cámara
                     </button>
                 </div>
 
                 <div id="activeControls" class="hidden grid grid-cols-2 gap-2 mb-4">
-                    <button id="capturePhoto" class="btn-camera bg-green-600 hover:bg-green-700 text-white">
+                    <button id="capturePhoto" onclick="capturePhoto()" class="btn-camera bg-green-600 hover:bg-green-700 text-white">
                         <i class="fas fa-camera-retro mr-2"></i>Capturar
                     </button>
-                    <button id="switchCamera" class="btn-camera bg-gray-600 hover:bg-gray-700 text-white">
+                    <button id="switchCamera" onclick="switchCamera()" class="btn-camera bg-gray-600 hover:bg-gray-700 text-white">
                         <i class="fas fa-sync-alt mr-2"></i>Cambiar
                     </button>
                 </div>
 
-                <div id="retakeControls" class="hidden grid grid-cols-2 gap-2 mb-4">
-                    <button id="retakePhoto" class="btn-camera bg-yellow-600 hover:bg-yellow-700 text-white">
+                <div id="retakeControls" class="hidden grid-cols-2 gap-2 mb-4">
+                    <button id="retakePhoto" onclick="retakePhoto()" class="btn-camera bg-yellow-600 hover:bg-yellow-700 text-white">
                         <i class="fas fa-redo mr-2"></i>Repetir
                     </button>
-                    <button id="processOCR" class="btn-camera bg-purple-600 hover:bg-purple-700 text-white">
+                    <button id="processOCR" onclick="processWithOCR()" class="btn-camera bg-purple-600 hover:bg-purple-700 text-white">
                         <i class="fas fa-magic mr-2"></i>Analizar con IA
                     </button>
                 </div>
@@ -161,10 +161,10 @@
 
                 <!-- Action Buttons -->
                 <div class="grid grid-cols-2 gap-2">
-                    <button id="resetDemo" class="btn-camera bg-gray-500 hover:bg-gray-600 text-white">
+                    <button id="resetDemo" onclick="resetDemo()" class="btn-camera bg-gray-500 hover:bg-gray-600 text-white">
                         <i class="fas fa-refresh mr-2"></i>Nuevo Ticket
                     </button>
-                    <button id="saveAmount" class="btn-camera bg-green-600 hover:bg-green-700 text-white">
+                    <button id="saveAmount" onclick="saveAmount()" class="btn-camera bg-green-600 hover:bg-green-700 text-white">
                         <i class="fas fa-check mr-2"></i>Confirmar
                     </button>
                 </div>
@@ -213,27 +213,28 @@
         });
 
         // Event Listeners
+        // Función directa para iOS
+        function startCameraDirectly() {
+            alert('👆 BOTÓN TOCADO! (método directo)');
+            startCamera();
+        }
+
         function setupEventListeners() {
             console.log('🔧 Configurando event listeners...');
             
-            const startBtn = document.getElementById('startCamera');
-            if (!startBtn) {
-                console.error('❌ Botón startCamera no encontrado');
-                return;
-            }
-            
-            startBtn.addEventListener('click', (e) => {
-                alert('👆 BOTÓN TOCADO!');
-                console.log('👆 Click detectado en startCamera');
-                e.preventDefault();
-                startCamera();
-            });
-            document.getElementById('capturePhoto').addEventListener('click', capturePhoto);
-            document.getElementById('switchCamera').addEventListener('click', switchCamera);
-            document.getElementById('retakePhoto').addEventListener('click', retakePhoto);
-            document.getElementById('processOCR').addEventListener('click', processWithOCR);
-            document.getElementById('resetDemo').addEventListener('click', resetDemo);
-            document.getElementById('saveAmount').addEventListener('click', saveAmount);
+            // Event listeners para otros botones (usando onclick directo para iOS)
+            document.getElementById('capturePhoto').onclick = () => {
+                alert('📷 Capturar tocado');
+                capturePhoto();
+            };
+            document.getElementById('switchCamera').onclick = switchCamera;
+            document.getElementById('retakePhoto').onclick = retakePhoto; 
+            document.getElementById('processOCR').onclick = () => {
+                alert('🤖 Procesando...');
+                processWithOCR();
+            };
+            document.getElementById('resetDemo').onclick = resetDemo;
+            document.getElementById('saveAmount').onclick = saveAmount;
 
             // Smart amount suggestions
             document.addEventListener('click', handleSmartAmountClicks);
