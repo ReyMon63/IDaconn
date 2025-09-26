@@ -300,7 +300,7 @@
                         <!-- Quick Actions -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <button id="addExpenseBtn" class="btn-touch bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
-                                <i class="fas fa-camera mr-2"></i> Registrar Gasto
+                                <i class="fas fa-receipt mr-2"></i> Registrar Gasto
                             </button>
                             <button id="viewReportsBtn" class="btn-touch bg-purple-600 hover:bg-purple-700 text-white rounded-lg">
                                 <i class="fas fa-chart-bar mr-2"></i> Ver Reportes
@@ -395,24 +395,506 @@
         </div>
     </div>
 
-    <!-- OpenCV.js y Tesseract.js -->
-    <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onOpenCvReady();"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-    
+    <!-- Modal: Selección de Tipo de Comprobante -->
+    <div id="expenseTypeModal" class="modal">
+        <div class="modal-content max-w-md">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">Tipo de Comprobante</h2>
+                <button id="closeExpenseTypeModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <!-- Factura -->
+                <button id="expenseTypeFactura" class="w-full p-4 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg text-left transition-colors">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center mr-4">
+                            <i class="fas fa-file-invoice text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-gray-800">Factura</h3>
+                            <p class="text-sm text-gray-600">Subir XML + PDF</p>
+                        </div>
+                    </div>
+                </button>
+
+                <!-- Ticket -->
+                <button id="expenseTypeTicket" class="w-full p-4 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg text-left transition-colors">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mr-4">
+                            <i class="fas fa-camera text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-gray-800">Ticket</h3>
+                            <p class="text-sm text-gray-600">Foto + IA automática</p>
+                        </div>
+                    </div>
+                </button>
+
+                <!-- Sin Comprobante -->
+                <button id="expenseTypeManual" class="w-full p-4 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg text-left transition-colors">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center mr-4">
+                            <i class="fas fa-edit text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-gray-800">Sin Comprobante</h3>
+                            <p class="text-sm text-gray-600">Captura manual</p>
+                        </div>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Factura (XML + PDF) -->
+    <div id="facturaModal" class="modal">
+        <div class="modal-content max-w-lg">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">Registrar Factura</h2>
+                <button id="closeFacturaModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="facturaForm" class="space-y-4">
+                <!-- Archivo XML -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Archivo XML <span class="text-red-500">*</span>
+                    </label>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                        <input type="file" id="xmlFile" accept=".xml" class="hidden">
+                        <button type="button" onclick="document.getElementById('xmlFile').click()" 
+                                class="text-blue-600 hover:text-blue-800">
+                            <i class="fas fa-upload text-2xl mb-2"></i>
+                            <p>Seleccionar XML</p>
+                        </button>
+                        <div id="xmlFileName" class="text-sm text-gray-600 mt-2 hidden"></div>
+                    </div>
+                </div>
+
+                <!-- Archivo PDF -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Archivo PDF <span class="text-red-500">*</span>
+                    </label>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                        <input type="file" id="pdfFile" accept=".pdf" class="hidden">
+                        <button type="button" onclick="document.getElementById('pdfFile').click()" 
+                                class="text-blue-600 hover:text-blue-800">
+                            <i class="fas fa-file-pdf text-2xl mb-2"></i>
+                            <p>Seleccionar PDF</p>
+                        </button>
+                        <div id="pdfFileName" class="text-sm text-gray-600 mt-2 hidden"></div>
+                    </div>
+                </div>
+
+                <!-- Categoría -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Categoría:</label>
+                    <select id="facturaCategory" class="w-full px-4 py-3 border rounded-lg text-base" required>
+                        <option value="">Seleccionar categoría...</option>
+                        <option value="Producción">Producción</option>
+                        <option value="Comercial">Comercial</option>
+                        <option value="Administración">Administración</option>
+                    </select>
+                </div>
+
+                <!-- Botones -->
+                <div class="flex gap-3 pt-4">
+                    <button type="button" id="cancelFacturaBtn" 
+                            class="btn-touch flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="saveFacturaBtn"
+                            class="btn-touch flex-1 bg-green-600 hover:bg-green-700 text-white rounded-lg">
+                        Guardar Factura
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Ticket (Cámara + IA) -->
+    <div id="ticketModal" class="modal">
+        <div class="modal-content max-w-lg">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">Registrar Ticket</h2>
+                <button id="closeTicketModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Captura de Foto -->
+            <div id="ticketCameraSection" class="mb-6">
+                <h3 class="text-lg font-medium mb-3">1. Capturar Ticket</h3>
+                
+                <div id="ticketCameraContainer" class="relative bg-gray-100 rounded-lg overflow-hidden mb-4" style="height: 300px;">
+                    <video id="ticketVideo" class="w-full h-full object-cover hidden" autoplay playsinline></video>
+                    <canvas id="ticketCanvas" class="w-full h-full object-cover hidden"></canvas>
+                    
+                    <!-- Placeholder -->
+                    <div id="ticketPlaceholder" class="w-full h-full flex items-center justify-center text-gray-500">
+                        <div class="text-center">
+                            <i class="fas fa-camera text-4xl mb-2"></i>
+                            <p class="text-sm">Presiona "Iniciar Cámara"</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Camera overlay -->
+                    <div class="absolute inset-4 border-2 border-dashed border-blue-400 rounded-lg pointer-events-none"></div>
+                </div>
+
+                <!-- Camera Controls -->
+                <div id="ticketCameraControls" class="grid grid-cols-1 gap-2 mb-4">
+                    <button id="startTicketCamera" class="btn-touch bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                        <i class="fas fa-camera mr-2"></i>Iniciar Cámara
+                    </button>
+                </div>
+
+                <div id="ticketActiveControls" class="hidden grid grid-cols-2 gap-2 mb-4">
+                    <button id="captureTicketPhoto" class="btn-touch bg-green-600 hover:bg-green-700 text-white rounded-lg">
+                        <i class="fas fa-camera-retro mr-2"></i>Capturar
+                    </button>
+                    <button id="switchTicketCamera" class="btn-touch bg-gray-600 hover:bg-gray-700 text-white rounded-lg">
+                        <i class="fas fa-sync-alt mr-2"></i>Cambiar
+                    </button>
+                </div>
+
+                <div id="ticketRetakeControls" class="hidden grid grid-cols-2 gap-2 mb-4">
+                    <button id="retakeTicketPhoto" class="btn-touch bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg">
+                        <i class="fas fa-redo mr-2"></i>Repetir
+                    </button>
+                    <button id="processTicketOCR" class="btn-touch bg-purple-600 hover:bg-purple-700 text-white rounded-lg">
+                        <i class="fas fa-magic mr-2"></i>Analizar con IA
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="ticketResultsSection" class="hidden">
+                <h3 class="text-lg font-medium mb-3">2. 🤖 IA Detectó:</h3>
+                
+                <!-- Smart Amount Suggestions -->
+                <div id="ticketAmountSuggestions" class="hidden mb-4 space-y-2">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-blue-800">🤖 IA Sugiere:</span>
+                            <span id="ticketAiConfidence" class="text-xs text-blue-600">95%</span>
+                        </div>
+                        <button type="button" id="ticketSuggestedAmount" 
+                                class="w-full text-left p-2 bg-white border border-blue-300 rounded hover:bg-blue-50 transition-colors">
+                            <span class="text-lg font-bold text-blue-900">$0.00</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Alternativas -->
+                    <div id="ticketAlternativeAmounts" class="hidden">
+                        <div class="text-xs text-gray-600 mb-1">Otras opciones detectadas:</div>
+                        <div id="ticketAlternatives" class="grid grid-cols-2 gap-1"></div>
+                    </div>
+                    
+                    <button type="button" id="showTicketAlternatives" 
+                            class="text-xs text-blue-600 hover:text-blue-800 underline">
+                        Ver más opciones detectadas
+                    </button>
+                </div>
+
+                <form id="ticketForm" class="space-y-4">
+                    <!-- Categoría -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Categoría:</label>
+                        <select id="ticketCategory" class="w-full px-4 py-3 border rounded-lg text-base" required>
+                            <option value="">Seleccionar categoría...</option>
+                            <option value="Producción">Producción</option>
+                            <option value="Comercial">Comercial</option>
+                            <option value="Administración">Administración</option>
+                        </select>
+                    </div>
+
+                    <!-- Monto -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Monto (MXN):</label>
+                        <input type="number" id="ticketAmount" step="0.01" min="0" 
+                               class="w-full px-4 py-3 border rounded-lg text-base" 
+                               placeholder="0.00" required>
+                        <div class="text-xs text-gray-500 mt-1">
+                            💡 Editado automáticamente por IA - puedes corregir
+                        </div>
+                    </div>
+
+                    <!-- Descripción -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Descripción:</label>
+                        <textarea id="ticketDescription" rows="2"
+                                  class="w-full px-4 py-3 border rounded-lg text-base"
+                                  placeholder="Descripción del gasto (opcional)"></textarea>
+                    </div>
+
+                    <!-- Botones -->
+                    <div class="flex gap-3 pt-4">
+                        <button type="button" id="cancelTicketBtn" 
+                                class="btn-touch flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg">
+                            Cancelar
+                        </button>
+                        <button type="submit" id="saveTicketBtn"
+                                class="btn-touch flex-1 bg-green-600 hover:bg-green-700 text-white rounded-lg">
+                            Guardar Ticket
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Sin Comprobante (Manual) -->
+    <div id="manualModal" class="modal">
+        <div class="modal-content max-w-lg">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">Registro Manual</h2>
+                <button id="closeManualModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="manualForm" class="space-y-4">
+                <!-- Fecha -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Fecha <span class="text-red-500">*</span>
+                    </label>
+                    <input type="date" id="manualDate" 
+                           class="w-full px-4 py-3 border rounded-lg text-base" required>
+                </div>
+
+                <!-- Monto -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Monto (MXN) <span class="text-red-500">*</span>
+                    </label>
+                    <input type="number" id="manualAmount" step="0.01" min="0" 
+                           class="w-full px-4 py-3 border rounded-lg text-base" 
+                           placeholder="0.00" required>
+                </div>
+
+                <!-- Concepto -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Concepto <span class="text-red-500">*</span>
+                    </label>
+                    <textarea id="manualConcept" rows="3"
+                              class="w-full px-4 py-3 border rounded-lg text-base"
+                              placeholder="Describe el gasto..." required></textarea>
+                </div>
+
+                <!-- Categoría -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Categoría:</label>
+                    <select id="manualCategory" class="w-full px-4 py-3 border rounded-lg text-base" required>
+                        <option value="">Seleccionar categoría...</option>
+                        <option value="Producción">Producción</option>
+                        <option value="Comercial">Comercial</option>
+                        <option value="Administración">Administración</option>
+                    </select>
+                </div>
+
+                <!-- Botones -->
+                <div class="flex gap-3 pt-4">
+                    <button type="button" id="cancelManualBtn" 
+                            class="btn-touch flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="saveManualBtn"
+                            class="btn-touch flex-1 bg-green-600 hover:bg-green-700 text-white rounded-lg">
+                        Guardar Gasto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Scripts -->
-    <script src="js/debug.js"></script>
-    <script src="js/database.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/projects.js"></script>
-    <script src="js/camera.js"></script>
-    <script src="js/smart-scanner.js"></script>
-    <script src="js/ocr.js"></script>
-    <script src="js/expenses.js"></script>
-    <script src="js/reports.js"></script>
-    <script src="js/app.js"></script>
-    
     <script>
-        // Callback cuando OpenCV esté listo
+        // Smart Amount Detection incluido directamente (para evitar problemas de carga en móvil)
+        if (typeof debug === 'undefined') {
+            window.debug = {
+                log: (...args) => console.log('[SmartAmountDetector]', ...args),
+                error: (...args) => console.error('[SmartAmountDetector]', ...args),
+                warn: (...args) => console.warn('[SmartAmountDetector]', ...args)
+            };
+        }
+
+        class SmartAmountDetector {
+            constructor() {
+                this.patterns = {
+                    contextKeywords: [
+                        { words: ['total', 'suma', 'importe'], weight: 10, radius: 80 },
+                        { words: ['subtotal', 'neto'], weight: 8, radius: 60 },
+                        { words: ['pagar', 'cobrar', 'precio'], weight: 7, radius: 50 },
+                        { words: ['cambio', 'devolucion'], weight: -5, radius: 40 },
+                        { words: ['iva', 'impuesto', 'tax'], weight: 3, radius: 30 },
+                        { words: ['descuento', 'ahorro'], weight: 2, radius: 40 }
+                    ],
+                    
+                    amountPatterns: [
+                        /\$\s*([0-9]{1,3}(?:[,]\d{3})*(?:\.\d{2})?)/g,
+                        /([0-9]{1,3}(?:[,]\d{3})*(?:\.\d{2})?)\s*pesos/gi,
+                        /([0-9]{1,3}(?:[,]\d{3})*(?:\.\d{2})?)\s*MXN/gi,
+                        /total\s*:?\s*\$?\s*([0-9]{1,3}(?:[,]\d{3})*(?:\.\d{2})?)/gi,
+                        /suma\s*:?\s*\$?\s*([0-9]{1,3}(?:[,]\d{3})*(?:\.\d{2})?)/gi,
+                        /([0-9]{1,3}(?:[,]\d{3})*\.\d{2})/g
+                    ]
+                };
+                
+                debug.log('SmartAmountDetector initialized');
+            }
+
+            analyzeAmounts(ocrText, ocrConfidence = 0.8) {
+                if (!ocrText || ocrText.trim().length === 0) {
+                    return { suggested: null, alternatives: [], confidence: 0, analysis: 'No hay texto para analizar' };
+                }
+
+                debug.log('Starting smart amount analysis');
+
+                try {
+                    const rawAmounts = this.extractAllAmounts(ocrText);
+                    
+                    if (rawAmounts.length === 0) {
+                        return { suggested: null, alternatives: [], confidence: 0, analysis: 'No se encontraron montos en el texto' };
+                    }
+
+                    const analyzedAmounts = rawAmounts.map(amount => 
+                        this.analyzeAmountContext(amount, ocrText)
+                    );
+
+                    const scoredAmounts = this.calculateScores(analyzedAmounts, ocrText);
+                    const suggested = scoredAmounts[0];
+                    const alternatives = scoredAmounts.slice(1, 5);
+                    const confidence = Math.min(0.95, ocrConfidence * 0.8 + (suggested.totalScore / 30) * 0.2);
+                    
+                    debug.log('Smart analysis complete', {
+                        suggested: suggested.value,
+                        confidence: confidence,
+                        totalAmounts: scoredAmounts.length
+                    });
+                    
+                    return {
+                        suggested: suggested,
+                        alternatives: alternatives,
+                        confidence: confidence,
+                        analysis: `Monto sugerido: $${suggested.value.toFixed(2)} (Score: ${suggested.totalScore.toFixed(1)})`
+                    };
+
+                } catch (error) {
+                    debug.error('Error in smart amount analysis:', error);
+                    return this.basicAmountFallback(ocrText);
+                }
+            }
+
+            extractAllAmounts(text) {
+                const amounts = [];
+                const seen = new Set();
+                
+                this.patterns.amountPatterns.forEach((pattern, patternIndex) => {
+                    const matches = [...text.matchAll(pattern)];
+                    
+                    matches.forEach(match => {
+                        const cleanAmount = match[1] || match[0];
+                        const numericValue = parseFloat(cleanAmount.replace(/[,$]/g, ''));
+                        
+                        if (numericValue > 0 && numericValue < 999999 && !seen.has(numericValue)) {
+                            amounts.push({
+                                value: numericValue,
+                                originalText: match[0],
+                                cleanText: cleanAmount,
+                                position: match.index,
+                                patternType: patternIndex,
+                                context: this.extractContext(text, match.index, 100)
+                            });
+                            seen.add(numericValue);
+                        }
+                    });
+                });
+                
+                return amounts;
+            }
+
+            analyzeAmountContext(amount, fullText) {
+                let contextScore = 0;
+                let reasoningFactors = [];
+                
+                const context = amount.context.toLowerCase();
+                
+                this.patterns.contextKeywords.forEach(keyword => {
+                    keyword.words.forEach(word => {
+                        if (context.includes(word)) {
+                            contextScore += keyword.weight;
+                            reasoningFactors.push(`Contexto "${word}" (${keyword.weight > 0 ? '+' : ''}${keyword.weight})`);
+                        }
+                    });
+                });
+                
+                return {
+                    ...amount,
+                    contextScore,
+                    reasoningFactors
+                };
+            }
+
+            calculateScores(amounts, fullText) {
+                return amounts.map(amount => {
+                    let totalScore = amount.contextScore || 0;
+                    
+                    const textLength = fullText.length;
+                    const relativePosition = amount.position / textLength;
+                    if (relativePosition > 0.7) totalScore += 3;
+                    else if (relativePosition > 0.5) totalScore += 1;
+                    
+                    if (amount.originalText.includes('$') || amount.originalText.includes('.')) {
+                        totalScore += 1;
+                    }
+                    
+                    if (amount.value < 10) totalScore -= 2;
+                    if (amount.value > 10000) totalScore -= 1;
+                    
+                    return {
+                        ...amount,
+                        totalScore
+                    };
+                }).sort((a, b) => b.totalScore - a.totalScore);
+            }
+
+            extractContext(text, position, radius) {
+                const start = Math.max(0, position - radius);
+                const end = Math.min(text.length, position + radius);
+                return text.substring(start, end);
+            }
+
+            basicAmountFallback(text) {
+                const amounts = this.extractAllAmounts(text);
+                if (amounts.length === 0) {
+                    return { suggested: null, alternatives: [], confidence: 0, analysis: 'No se encontraron montos' };
+                }
+                
+                const sorted = amounts.sort((a, b) => b.value - a.value);
+                
+                return {
+                    suggested: {
+                        ...sorted[0],
+                        totalScore: 5,
+                        confidence: 0.6,
+                        reasoningFactors: ['Modo básico: Mayor monto encontrado']
+                    },
+                    alternatives: sorted.slice(1, 4),
+                    confidence: 0.6,
+                    analysis: 'Análisis básico: Se sugiere el monto más grande encontrado'
+                };
+            }
+        }
+
+        // Definir función onOpenCvReady antes de cargar OpenCV
         function onOpenCvReady() {
             console.log('OpenCV.js loaded successfully');
             try {
@@ -424,11 +906,13 @@
                     setTimeout(() => {
                         if (window.smartScanner) {
                             window.smartScanner.onOpenCvReady();
+                        } else {
+                            console.warn('SmartScanner still not available after retry');
                         }
                     }, 1000);
                 }
             } catch (error) {
-                console.error('Error initializing OpenCV:', error);
+                console.error('Error initializing OpenCV with SmartScanner:', error);
             }
         }
 
@@ -439,6 +923,23 @@
             }
         }, 10000);
     </script>
+
+    <!-- OpenCV.js y Tesseract.js -->
+    <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onOpenCvReady();"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="js/debug.js"></script>
+    <script src="js/database.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/projects.js"></script>
+    <script src="js/camera.js"></script>
+    <script src="js/smart-scanner.js"></script>
+    <script src="js/ocr.js"></script>
+    <script src="js/smart-amount-detection.js"></script>
+    <script src="js/expense-types.js"></script>
+    <script src="js/expenses.js"></script>
+    <script src="js/reports.js"></script>
+    <script src="js/app.js"></script>
+
     
     <!-- Service Worker Registration -->
     <script>
