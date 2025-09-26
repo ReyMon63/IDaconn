@@ -271,7 +271,13 @@ class ReportManager {
         const result = await db.getRecords('expenses', { limit: 1000 });
         let expenses = result.data || [];
         
-        // Aplicar filtros
+        // FILTRO POR USUARIO: Solo mostrar gastos del usuario actual
+        const currentUser = auth.getCurrentUser();
+        if (currentUser) {
+            expenses = expenses.filter(e => e.user_id === currentUser.id);
+        }
+        
+        // Aplicar filtros adicionales
         if (filters.project_id) {
             expenses = expenses.filter(e => e.project_id === filters.project_id);
         }
