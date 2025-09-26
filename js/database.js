@@ -687,10 +687,12 @@ class Database {
                 .filter(d => d.project_id === projectId)
                 .reduce((sum, d) => sum + (d.amount || 0), 0);
             
-            // Obtener gastos
+            // Obtener gastos (solo del usuario actual)
             const expensesResult = await this.getRecords('expenses');
+            const currentUser = auth?.getCurrentUser();
             const expenses = expensesResult.data
                 .filter(e => e.project_id === projectId)
+                .filter(e => currentUser ? e.user_id === currentUser.id : true)
                 .reduce((sum, e) => sum + (e.amount || 0), 0);
             
             const balance = budget + deposits - expenses;
@@ -724,8 +726,12 @@ class Database {
                 sort: 'created_at'
             });
             
+            // FILTRO POR USUARIO: Solo gastos del usuario actual
+            const currentUser = auth?.getCurrentUser();
+            
             return expenses.data
                 .filter(e => e.project_id === projectId)
+                .filter(e => currentUser ? e.user_id === currentUser.id : true)
                 .sort((a, b) => (b.created_at || 0) - (a.created_at || 0))
                 .slice(0, limit);
                 
