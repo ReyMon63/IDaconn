@@ -372,6 +372,12 @@ class ProjectManager {
             actions.classList.remove('hidden');
         }
         
+        // Mostrar botones rápidos en header
+        const headerQuickActions = document.getElementById('headerQuickActions');
+        if (headerQuickActions) {
+            headerQuickActions.classList.remove('hidden');
+        }
+        
         debug.log('Project actions shown');
     }
 
@@ -380,6 +386,12 @@ class ProjectManager {
         const actions = document.getElementById('projectActions');
         if (actions) {
             actions.classList.add('hidden');
+        }
+        
+        // Ocultar botones rápidos en header
+        const headerQuickActions = document.getElementById('headerQuickActions');
+        if (headerQuickActions) {
+            headerQuickActions.classList.add('hidden');
         }
         
         debug.log('Project actions hidden');

@@ -32,9 +32,16 @@ class ExpenseTypeManager {
 
     // Configurar event listeners
     setupEventListeners() {
-        // Modal de selección de tipo  
+        // Modal de selección de tipo (botón original)
         document.getElementById('addExpenseBtn')?.addEventListener('click', (e) => {
             debug.log('Add expense button clicked');
+            e.preventDefault();
+            this.showExpenseTypeModal();
+        });
+        
+        // Modal de selección de tipo (botón del header)
+        document.getElementById('headerAddExpenseBtn')?.addEventListener('click', (e) => {
+            debug.log('Header add expense button clicked');
             e.preventDefault();
             this.showExpenseTypeModal();
         });
@@ -175,6 +182,8 @@ class ExpenseTypeManager {
 
         // Camera controls
         document.getElementById('startTicketCamera')?.addEventListener('click', () => this.startTicketCamera());
+        document.getElementById('uploadTicketPhoto')?.addEventListener('click', () => this.uploadTicketPhoto());
+        document.getElementById('ticketFileInput')?.addEventListener('change', (e) => this.handleTicketFileUpload(e));
         document.getElementById('captureTicketPhoto')?.addEventListener('click', () => this.captureTicketPhoto());
         document.getElementById('switchTicketCamera')?.addEventListener('click', () => this.switchTicketCamera());
         document.getElementById('retakeTicketPhoto')?.addEventListener('click', () => this.retakeTicketPhoto());
@@ -185,13 +194,21 @@ class ExpenseTypeManager {
 
         // Form submission
         document.getElementById('ticketForm')?.addEventListener('submit', (e) => this.saveTicket(e));
+
+        // Reportes buttons
+        document.getElementById('viewReportsBtn')?.addEventListener('click', () => this.openReports());
+        document.getElementById('headerViewReportsBtn')?.addEventListener('click', () => this.openReports());
     }
 
     openTicketModal() {
+        debug.log('Opening ticket modal');
         this.currentExpenseType = 'ticket';
         this.closeExpenseTypeModal();
-        document.getElementById('ticketModal').classList.add('show');
+        
+        // Asegurar que el modal se resetee antes de mostrar
         this.resetTicketModal();
+        document.getElementById('ticketModal').classList.add('show');
+        
         debug.log('Ticket modal opened');
     }
 
@@ -220,6 +237,56 @@ class ExpenseTypeManager {
         document.getElementById('ticketForm')?.reset();
         
         this.capturedTicketData = null;
+    }
+
+    uploadTicketPhoto() {
+        debug.log('Opening file picker for ticket photo');
+        document.getElementById('ticketFileInput').click();
+    }
+
+    handleTicketFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        debug.log('File selected for ticket:', file.name);
+
+        // Validar que sea imagen
+        if (!file.type.startsWith('image/')) {
+            auth.showErrorMessage('Por favor selecciona una imagen válida');
+            return;
+        }
+
+        // Convertir a canvas
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.getElementById('ticketCanvas');
+                const ctx = canvas.getContext('2d');
+
+                // Ajustar canvas al tamaño de la imagen
+                canvas.width = img.width;
+                canvas.height = img.height;
+
+                // Dibujar imagen en canvas
+                ctx.drawImage(img, 0, 0);
+
+                // Mostrar canvas y ocultar placeholder
+                document.getElementById('ticketPlaceholder').classList.add('hidden');
+                canvas.classList.remove('hidden');
+
+                // Cambiar controles
+                document.getElementById('ticketCameraControls').classList.add('hidden');
+                document.getElementById('ticketRetakeControls').classList.remove('hidden');
+
+                // Guardar datos de imagen
+                this.capturedTicketData = canvas.toDataURL('image/jpeg', 0.8);
+
+                auth.showSuccessMessage('Foto cargada - Presiona "Analizar con IA"');
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
     }
 
     async startTicketCamera() {
@@ -628,6 +695,15 @@ class ExpenseTypeManager {
             document.getElementById('customConfirmModal').remove();
             if (onNo) onNo();
         };
+    }
+    // Abrir reportes
+    openReports() {
+        debug.log('Opening reports');
+        if (window.reportManager) {
+            window.reportManager.showReportsModal();
+        } else {
+            auth.showErrorMessage('Sistema de reportes no disponible');
+        }
     }
 }
 
