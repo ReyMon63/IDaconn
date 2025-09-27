@@ -278,7 +278,7 @@ class ProjectManager {
 
     // Configurar selector de proyecto
     setupProjectSelector() {
-        const selector = document.getElementById('projectSelect');
+        const selector = document.getElementById('headerProjectSelect');
         if (!selector) {
             debug.warn('Project selector not found');
             return;
@@ -297,7 +297,7 @@ class ProjectManager {
         try {
             debug.log('Loading projects');
             
-            const selector = debug.validateElement('#projectSelect', 'projects');
+            const selector = debug.validateElement('#headerProjectSelect', 'projects');
             if (!selector) return;
             
             // Mostrar cargando
@@ -323,7 +323,7 @@ class ProjectManager {
         } catch (error) {
             debug.error('Failed to load projects', error);
             
-            const selector = document.getElementById('projectSelect');
+            const selector = document.getElementById('headerProjectSelect');
             if (selector) {
                 selector.innerHTML = '<option value="">Error al cargar proyectos</option>';
             }

@@ -77,6 +77,10 @@ class Auth {
         if (navbar) navbar.classList.remove('hidden');
         if (bottomNav) bottomNav.classList.remove('hidden');
         
+        // Mostrar selector de proyecto en header
+        const headerProjectSelector = document.getElementById('headerProjectSelector');
+        if (headerProjectSelector) headerProjectSelector.style.display = 'block';
+        
         this.updateUserInfo();
         this.loadUserData();
     }
@@ -285,6 +289,10 @@ class Auth {
         // Limpiar cache
         db.clearCache();
         
+        // Ocultar selector de proyecto en header
+        const headerProjectSelector = document.getElementById('headerProjectSelector');
+        if (headerProjectSelector) headerProjectSelector.style.display = 'none';
+        
         this.showLogin();
     }
 
@@ -362,6 +370,54 @@ class Auth {
                 notification.remove();
             }
         }, 5000);
+    }
+
+    // Mostrar mensaje de información
+    showInfoMessage(message) {
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 left-4 right-4 bg-blue-500 text-white p-4 rounded-lg z-50 shadow-lg';
+        notification.innerHTML = `
+            <div class="flex items-center justify-between">
+                <div>
+                    <i class="fas fa-info-circle mr-2"></i>
+                    <span>${message}</span>
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()" class="text-white hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+
+    // Mostrar mensaje de advertencia
+    showWarningMessage(message) {
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 left-4 right-4 bg-yellow-500 text-white p-4 rounded-lg z-50 shadow-lg';
+        notification.innerHTML = `
+            <div class="flex items-center justify-between">
+                <div>
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <span>${message}</span>
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()" class="text-white hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto remove after 4 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 4000);
     }
 
     // Mostrar mensaje de éxito
