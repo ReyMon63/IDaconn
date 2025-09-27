@@ -141,9 +141,18 @@
                     <p class="text-blue-200 text-sm" id="userInfo">Bienvenido</p>
                     <!-- Project Selector in Header -->
                     <div class="mt-2" id="headerProjectSelector" style="display: none;">
-                        <select id="headerProjectSelect" class="text-sm bg-blue-700 text-white border border-blue-600 rounded px-2 py-1 max-w-48">
+                        <select id="headerProjectSelect" class="text-sm bg-blue-700 text-white border border-blue-600 rounded px-2 py-1 max-w-48 mb-2">
                             <option value="">Seleccionar proyecto...</option>
                         </select>
+                        <!-- Quick Actions in Header -->
+                        <div id="headerQuickActions" class="hidden flex gap-2 mt-1">
+                            <button id="headerAddExpenseBtn" class="text-xs bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded flex items-center">
+                                <i class="fas fa-receipt mr-1"></i>Gasto
+                            </button>
+                            <button id="headerViewReportsBtn" class="text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded flex items-center">
+                                <i class="fas fa-chart-bar mr-1"></i>Reportes
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="flex items-center gap-4">
@@ -296,8 +305,8 @@
 
                     <!-- Project Actions (visible when project selected) -->
                     <div id="projectActions" class="hidden space-y-4">
-                        <!-- Quick Actions -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Quick Actions (hidden - now in header) -->
+                        <div class="hidden grid-cols-1 sm:grid-cols-2 gap-4">
                             <button id="addExpenseBtn" class="btn-touch bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
                                 <i class="fas fa-receipt mr-2"></i> Registrar Gasto
                             </button>
@@ -547,11 +556,17 @@
                 </div>
 
                 <!-- Camera Controls -->
-                <div id="ticketCameraControls" class="grid grid-cols-1 gap-2 mb-4">
+                <div id="ticketCameraControls" class="grid grid-cols-2 gap-2 mb-4">
                     <button id="startTicketCamera" class="btn-touch bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
-                        <i class="fas fa-camera mr-2"></i>Iniciar Cámara
+                        <i class="fas fa-camera mr-2"></i>Usar Cámara
+                    </button>
+                    <button id="uploadTicketPhoto" class="btn-touch bg-green-600 hover:bg-green-700 text-white rounded-lg">
+                        <i class="fas fa-upload mr-2"></i>Subir Foto
                     </button>
                 </div>
+                
+                <!-- File input hidden -->
+                <input type="file" id="ticketFileInput" accept="image/*" class="hidden">
 
                 <div id="ticketActiveControls" class="hidden grid grid-cols-2 gap-2 mb-4">
                     <button id="captureTicketPhoto" class="btn-touch bg-green-600 hover:bg-green-700 text-white rounded-lg">
