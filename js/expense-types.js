@@ -32,8 +32,12 @@ class ExpenseTypeManager {
 
     // Configurar event listeners
     setupEventListeners() {
-        // Modal de selección de tipo
-        document.getElementById('addExpenseBtn')?.addEventListener('click', () => this.showExpenseTypeModal());
+        // Modal de selección de tipo  
+        document.getElementById('addExpenseBtn')?.addEventListener('click', (e) => {
+            debug.log('Add expense button clicked');
+            e.preventDefault();
+            this.showExpenseTypeModal();
+        });
         document.getElementById('closeExpenseTypeModal')?.addEventListener('click', () => this.closeExpenseTypeModal());
 
         // Botones de tipo de comprobante
@@ -564,17 +568,66 @@ class ExpenseTypeManager {
 
     // ========== DIÁLOGO CONTINUAR ==========
     showContinueDialog() {
-        const shouldContinue = confirm('¿Deseas registrar otro gasto?');
-        
-        if (shouldContinue) {
-            // Volver al selector de proyecto
-            this.showExpenseTypeModal();
-        } else {
-            // Opcional: cerrar sesión o ir a reportes
-            if (confirm('¿Deseas ver los reportes de tus gastos?')) {
-                document.getElementById('viewReportsBtn')?.click();
+        this.showCustomConfirm(
+            '¿Deseas registrar otro gasto?',
+            () => {
+                // SÍ - Volver al selector de tipo
+                this.showExpenseTypeModal();
+            },
+            () => {
+                // NO - Preguntar por reportes o logout
+                this.showCustomConfirm(
+                    '¿Deseas ver los reportes de tus gastos?',
+                    () => {
+                        // SÍ - Ir a reportes
+                        document.getElementById('viewReportsBtn')?.click();
+                    },
+                    () => {
+                        // NO - Cerrar sesión automáticamente
+                        if (confirm('Cerrando sesión...')) {
+                            document.getElementById('logoutBtn')?.click();
+                        }
+                    }
+                );
             }
-        }
+        );
+    }
+
+    // Diálogo personalizado con SÍ/NO
+    showCustomConfirm(message, onYes, onNo) {
+        // Crear modal personalizado
+        const modalHTML = `
+            <div id="customConfirmModal" class="modal show">
+                <div class="modal-content max-w-sm">
+                    <div class="text-center p-6">
+                        <i class="fas fa-question-circle text-4xl text-blue-600 mb-4"></i>
+                        <h3 class="text-lg font-bold mb-4">${message}</h3>
+                        <div class="flex gap-3">
+                            <button id="confirmNo" class="btn-touch flex-1 bg-gray-500 hover:bg-gray-600 text-white rounded-lg">
+                                NO
+                            </button>
+                            <button id="confirmYes" class="btn-touch flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                                SÍ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Agregar al DOM
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+        // Event listeners
+        document.getElementById('confirmYes').onclick = () => {
+            document.getElementById('customConfirmModal').remove();
+            if (onYes) onYes();
+        };
+
+        document.getElementById('confirmNo').onclick = () => {
+            document.getElementById('customConfirmModal').remove();
+            if (onNo) onNo();
+        };
     }
 }
 
