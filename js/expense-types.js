@@ -39,12 +39,7 @@ class ExpenseTypeManager {
             this.showExpenseTypeModal();
         });
         
-        // Modal de selección de tipo (botón del header)
-        document.getElementById('headerAddExpenseBtn')?.addEventListener('click', (e) => {
-            debug.log('Header add expense button clicked');
-            e.preventDefault();
-            this.showExpenseTypeModal();
-        });
+
         document.getElementById('closeExpenseTypeModal')?.addEventListener('click', () => this.closeExpenseTypeModal());
 
         // Botones de tipo de comprobante
@@ -195,9 +190,8 @@ class ExpenseTypeManager {
         // Form submission
         document.getElementById('ticketForm')?.addEventListener('submit', (e) => this.saveTicket(e));
 
-        // Reportes buttons
+        // Reportes button
         document.getElementById('viewReportsBtn')?.addEventListener('click', () => this.openReports());
-        document.getElementById('headerViewReportsBtn')?.addEventListener('click', () => this.openReports());
     }
 
     openTicketModal() {
@@ -699,10 +693,24 @@ class ExpenseTypeManager {
     // Abrir reportes
     openReports() {
         debug.log('Opening reports');
+        console.log('ReportManager available:', !!window.reportManager);
+        
         if (window.reportManager) {
-            window.reportManager.showReportsModal();
+            try {
+                window.reportManager.showReportsModal();
+            } catch (error) {
+                debug.error('Error opening reports:', error);
+                auth.showErrorMessage('Error al abrir reportes: ' + error.message);
+            }
         } else {
-            auth.showErrorMessage('Sistema de reportes no disponible');
+            auth.showErrorMessage('Sistema de reportes no disponible - Recargando...');
+            // Intentar inicializar reportManager
+            setTimeout(() => {
+                if (window.ReportManager) {
+                    window.reportManager = new ReportManager();
+                    auth.showInfoMessage('Sistema de reportes inicializado');
+                }
+            }, 100);
         }
     }
 }

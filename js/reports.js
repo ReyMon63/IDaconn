@@ -179,10 +179,14 @@ class ReportManager {
         debug.log('Showing reports modal');
 
         const modal = document.getElementById('reportsModal');
-        if (modal) {
-            modal.classList.add('show');
-            await this.loadProjectsForReport();
+        if (!modal) {
+            debug.error('Reports modal not found in DOM');
+            auth.showErrorMessage('Modal de reportes no encontrado');
+            return;
         }
+        
+        modal.classList.add('show');
+        await this.loadProjectsForReport();
     }
 
     // Cerrar modal de reportes
@@ -425,5 +429,15 @@ class ReportManager {
     }
 }
 
-// Crear instancia global
-window.reportManager = new ReportManager();
+// Inicializar cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', () => {
+    // Crear instancia global
+    window.reportManager = new ReportManager();
+    debug.log('ReportManager initialized on DOMContentLoaded');
+});
+
+// Fallback: crear instancia inmediatamente también
+if (!window.reportManager) {
+    window.reportManager = new ReportManager();
+    debug.log('ReportManager initialized immediately');
+}

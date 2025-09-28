@@ -77,9 +77,7 @@ class Auth {
         if (navbar) navbar.classList.remove('hidden');
         if (bottomNav) bottomNav.classList.remove('hidden');
         
-        // Mostrar selector de proyecto en header
-        const headerProjectSelector = document.getElementById('headerProjectSelector');
-        if (headerProjectSelector) headerProjectSelector.style.display = 'block';
+        // Mostrar dashboard (las tarjetas se muestran automáticamente)
         
         this.updateUserInfo();
         this.loadUserData();
@@ -289,9 +287,7 @@ class Auth {
         // Limpiar cache
         db.clearCache();
         
-        // Ocultar selector de proyecto en header
-        const headerProjectSelector = document.getElementById('headerProjectSelector');
-        if (headerProjectSelector) headerProjectSelector.style.display = 'none';
+        // Limpiar dashboard (las tarjetas se ocultan automáticamente)
         
         this.showLogin();
     }

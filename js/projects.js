@@ -367,32 +367,20 @@ class ProjectManager {
 
     // Mostrar acciones del proyecto
     showProjectActions() {
-        const actions = debug.validateElement('#projectActions', 'projects');
-        if (actions) {
-            actions.classList.remove('hidden');
-        }
-        
-        // Mostrar botones rápidos en header
-        const headerQuickActions = document.getElementById('headerQuickActions');
-        if (headerQuickActions) {
-            headerQuickActions.classList.remove('hidden');
-        }
+        // Mostrar tarjetas principales
+        document.getElementById('quickActionsCard')?.classList.remove('hidden');
+        document.getElementById('balanceCard')?.classList.remove('hidden');
+        document.getElementById('recentCard')?.classList.remove('hidden');
         
         debug.log('Project actions shown');
     }
 
     // Ocultar acciones del proyecto
     hideProjectActions() {
-        const actions = document.getElementById('projectActions');
-        if (actions) {
-            actions.classList.add('hidden');
-        }
-        
-        // Ocultar botones rápidos en header
-        const headerQuickActions = document.getElementById('headerQuickActions');
-        if (headerQuickActions) {
-            headerQuickActions.classList.add('hidden');
-        }
+        // Ocultar tarjetas principales
+        document.getElementById('quickActionsCard')?.classList.add('hidden');
+        document.getElementById('balanceCard')?.classList.add('hidden');
+        document.getElementById('recentCard')?.classList.add('hidden');
         
         debug.log('Project actions hidden');
     }
