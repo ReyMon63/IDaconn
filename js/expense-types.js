@@ -32,9 +32,8 @@ class ExpenseTypeManager {
 
     // Configurar event listeners
     setupEventListeners() {
-        // Modal de selección de tipo (botón original)
+        // Modal de selección de tipo
         document.getElementById('addExpenseBtn')?.addEventListener('click', (e) => {
-            debug.log('Add expense button clicked');
             e.preventDefault();
             this.showExpenseTypeModal();
         });
@@ -61,8 +60,6 @@ class ExpenseTypeManager {
 
     // ========== MODAL DE SELECCIÓN DE TIPO ==========
     showExpenseTypeModal() {
-        debug.log('Showing expense type modal');
-        
         const selectedProject = window.projectManager?.getSelectedProject();
         if (!selectedProject) {
             auth.showErrorMessage('Por favor selecciona un proyecto primero');
@@ -692,25 +689,10 @@ class ExpenseTypeManager {
     }
     // Abrir reportes
     openReports() {
-        debug.log('Opening reports');
-        console.log('ReportManager available:', !!window.reportManager);
-        
         if (window.reportManager) {
-            try {
-                window.reportManager.showReportsModal();
-            } catch (error) {
-                debug.error('Error opening reports:', error);
-                auth.showErrorMessage('Error al abrir reportes: ' + error.message);
-            }
+            window.reportManager.showReportsModal();
         } else {
-            auth.showErrorMessage('Sistema de reportes no disponible - Recargando...');
-            // Intentar inicializar reportManager
-            setTimeout(() => {
-                if (window.ReportManager) {
-                    window.reportManager = new ReportManager();
-                    auth.showInfoMessage('Sistema de reportes inicializado');
-                }
-            }, 100);
+            auth.showErrorMessage('Sistema de reportes no disponible');
         }
     }
 }

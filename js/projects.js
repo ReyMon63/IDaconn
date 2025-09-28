@@ -367,22 +367,15 @@ class ProjectManager {
 
     // Mostrar acciones del proyecto
     showProjectActions() {
-        // Mostrar tarjetas principales
-        document.getElementById('quickActionsCard')?.classList.remove('hidden');
-        document.getElementById('balanceCard')?.classList.remove('hidden');
-        document.getElementById('recentCard')?.classList.remove('hidden');
-        
-        debug.log('Project actions shown');
+        // Las tarjetas ya son visibles por defecto - no hacer nada
+        console.log('Project selected - cards already visible');
     }
 
     // Ocultar acciones del proyecto
     hideProjectActions() {
-        // Ocultar tarjetas principales
-        document.getElementById('quickActionsCard')?.classList.add('hidden');
-        document.getElementById('balanceCard')?.classList.add('hidden');
-        document.getElementById('recentCard')?.classList.add('hidden');
-        
-        debug.log('Project actions hidden');
+        // Las tarjetas permanecen visibles - solo limpiar datos
+        document.getElementById('currentBalance').textContent = '$0.00';
+        document.getElementById('recentExpenses').innerHTML = '<p class="text-gray-500 text-center py-3 text-sm">Selecciona un proyecto</p>';
     }
 
     // Actualizar saldo del proyecto
