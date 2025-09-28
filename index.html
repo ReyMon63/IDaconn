@@ -22,9 +22,14 @@
                 <h1 class="text-xl font-bold">Gestor de Gastos</h1>
                 <p class="text-sm opacity-90" id="userInfo">Usuario</p>
             </div>
-            <button id="logoutBtn" class="btn bg-blue-700 hover:bg-blue-800 text-white px-3 py-2">
-                <i class="fas fa-sign-out-alt"></i>
-            </button>
+            <div class="flex items-center gap-2">
+                <button id="exportBtn" class="btn bg-green-600 hover:bg-green-700 text-white px-2 py-1 text-sm">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button id="logoutBtn" class="btn bg-blue-700 hover:bg-blue-800 text-white px-3 py-2">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
         </div>
     </nav>
 
@@ -160,6 +165,12 @@
                 <div id="fileSection" class="hidden">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Archivo:</label>
                     <input type="file" id="fileInput" class="w-full px-3 py-2 border rounded-lg">
+                    
+                    <!-- Image Preview -->
+                    <div id="imagePreview" class="hidden mt-3">
+                        <img id="previewImg" class="w-full max-w-xs mx-auto rounded-lg border" />
+                        <p class="text-xs text-gray-500 mt-1 text-center">Vista previa del ticket</p>
+                    </div>
                 </div>
 
                 <!-- Date -->
@@ -325,6 +336,23 @@
                 return expense;
             }
 
+            // Export data for download
+            exportData() {
+                const data = {
+                    projects: this.getProjects(),
+                    expenses: this.getExpenses(),
+                    exported_at: new Date().toISOString(),
+                    user: this.getCurrentUser()
+                };
+                return data;
+            }
+
+            // Reset data (for month end)
+            resetData() {
+                localStorage.removeItem('expenses');
+                this.initializeData();
+            }
+
             getCurrentUser() {
                 return JSON.parse(localStorage.getItem('currentUser') || '{}');
             }
@@ -372,6 +400,7 @@
                 // Login
                 document.getElementById('loginForm').addEventListener('submit', (e) => this.handleLogin(e));
                 document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
+                document.getElementById('exportBtn').addEventListener('click', () => this.exportData());
 
                 // Project selection
                 document.getElementById('projectSelect').addEventListener('change', (e) => this.selectProject(e.target.value));
@@ -388,6 +417,7 @@
                 // Expense form
                 document.getElementById('expenseForm').addEventListener('submit', (e) => this.saveExpense(e));
                 document.getElementById('expenseAmount').addEventListener('input', (e) => this.checkBalance(e.target.value));
+                document.getElementById('fileInput').addEventListener('change', (e) => this.handleFileUpload(e));
 
                 // Modal controls
                 document.getElementById('closeExpenseTypeModal').addEventListener('click', () => this.closeModal('expenseTypeModal'));
@@ -479,7 +509,7 @@
 
                 const balance = this.data.getProjectBalance(this.currentProject.id);
                 document.getElementById('currentBalance').textContent = 
-                    `$${balance.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+                    `$${balance.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
                 // Color coding
                 const balanceEl = document.getElementById('currentBalance');
@@ -489,6 +519,23 @@
                     balanceEl.style.color = '#f59e0b';
                 } else {
                     balanceEl.style.color = 'white';
+                }
+            }
+
+            handleFileUpload(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // Show preview for images
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        document.getElementById('previewImg').src = event.target.result;
+                        document.getElementById('imagePreview').classList.remove('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    document.getElementById('imagePreview').classList.add('hidden');
                 }
             }
 
@@ -508,9 +555,10 @@
                         <div class="flex-1">
                             <p class="font-medium text-sm">${expense.description || 'Sin descripción'}</p>
                             <p class="text-xs text-gray-600">${expense.category} • ${new Date(expense.expense_date || expense.created_at).toLocaleDateString('es-MX')}</p>
+                            ${expense.imageData ? '<i class="fas fa-image text-xs text-blue-500" title="Con imagen"></i>' : ''}
                         </div>
                         <div class="text-right">
-                            <p class="font-bold text-red-600">-$${expense.amount.toFixed(2)}</p>
+                            <p class="font-bold text-red-600">-$${expense.amount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                             <p class="text-xs text-gray-500">${expense.type || 'manual'}</p>
                         </div>
                     </div>
@@ -553,6 +601,7 @@
                 document.getElementById('expenseForm').reset();
                 document.getElementById('expenseDate').value = new Date().toISOString().split('T')[0];
                 document.getElementById('balanceWarning').classList.add('hidden');
+                document.getElementById('imagePreview').classList.add('hidden');
 
                 this.showModal('expenseModal');
             }
@@ -587,12 +636,29 @@
                     description: document.getElementById('expenseDescription').value,
                 };
 
-                // Add file info if uploaded
+                // Handle file upload (save as base64 for images)
                 const fileInput = document.getElementById('fileInput');
                 if (fileInput.files.length > 0) {
-                    formData.fileName = fileInput.files[0].name;
+                    const file = fileInput.files[0];
+                    formData.fileName = file.name;
+                    formData.fileSize = file.size;
+                    
+                    if (file.type.startsWith('image/')) {
+                        // Save image as base64
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            formData.imageData = event.target.result;
+                            this.completeExpenseSave(formData);
+                        };
+                        reader.readAsDataURL(file);
+                        return; // Wait for file read to complete
+                    }
                 }
 
+                this.completeExpenseSave(formData);
+            }
+
+            completeExpenseSave(formData) {
                 try {
                     this.data.addExpense(formData);
                     
@@ -600,7 +666,11 @@
                     this.updateBalance();
                     this.loadRecentExpenses();
                     
-                    this.showSuccessMessage(`Gasto registrado: $${formData.amount.toFixed(2)}`);
+                    const amountFormatted = formData.amount.toLocaleString('es-MX', { 
+                        minimumFractionDigits: 2, 
+                        maximumFractionDigits: 2 
+                    });
+                    this.showSuccessMessage(`Gasto registrado: $${amountFormatted}`);
                     
                     // Ask if user wants to add another expense
                     setTimeout(() => {
@@ -643,9 +713,12 @@
                 tbody.innerHTML = expenses.map(expense => `
                     <tr>
                         <td class="border border-gray-300 px-4 py-2">${new Date(expense.expense_date || expense.created_at).toLocaleDateString('es-MX')}</td>
-                        <td class="border border-gray-300 px-4 py-2">${expense.description}</td>
+                        <td class="border border-gray-300 px-4 py-2">
+                            ${expense.description}
+                            ${expense.imageData ? ' <i class="fas fa-image text-blue-500 ml-1" title="Con imagen adjunta"></i>' : ''}
+                        </td>
                         <td class="border border-gray-300 px-4 py-2">${expense.category}</td>
-                        <td class="border border-gray-300 px-4 py-2 text-right">$${expense.amount.toFixed(2)}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-right">$${expense.amount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     </tr>
                 `).join('');
 
@@ -660,6 +733,34 @@
 
             closeModal(modalId) {
                 document.getElementById(modalId).classList.remove('show');
+            }
+
+            exportData() {
+                try {
+                    const data = this.data.exportData();
+                    const dataStr = JSON.stringify(data, null, 2);
+                    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                    
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(dataBlob);
+                    link.download = `gastos_${new Date().toISOString().split('T')[0]}.json`;
+                    link.click();
+                    
+                    // Ask about month-end reset
+                    setTimeout(() => {
+                        if (confirm('¿Es cierre de mes? ¿Deseas reiniciar los datos de gastos para el nuevo mes?')) {
+                            if (confirm('⚠️ ATENCIÓN: Esto borrará todos los gastos registrados. Los datos ya están guardados en el archivo descargado. ¿Continuar?')) {
+                                this.data.resetData();
+                                this.loadRecentExpenses();
+                                this.updateBalance();
+                                this.showSuccessMessage('Datos reiniciados para nuevo mes');
+                            }
+                        }
+                    }, 1000);
+                    
+                } catch (error) {
+                    alert('Error al exportar datos: ' + error.message);
+                }
             }
 
             showSuccessMessage(message) {
