@@ -629,7 +629,10 @@
                         document.getElementById('xmlStatus').classList.remove('hidden');
                         
                         // Actualizar validación del balance
-                        this.validateBalance();
+                        const amount = document.getElementById('expenseAmount').value;
+                        if (amount) {
+                            this.checkBalance(amount);
+                        }
 
                         console.log('✅ XML procesado exitosamente');
 
