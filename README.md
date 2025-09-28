@@ -1,308 +1,185 @@
-[README.md](https://github.com/user-attachments/files/22521515/README.md)
-# 💰 Gestor de Gastos - WebApp PWA
+# 📱 Gestor de Gastos - PWA Completa
 
-Una **aplicación web progresiva (PWA)** completa para administrar gastos de múltiples proyectos con captura de fotos, OCR automático y reportes exportables. Optimizada especialmente para dispositivos móviles.
+Una aplicación web progresiva (PWA) completa para la gestión de gastos empresariales con autenticación por roles, validación de presupuestos y manejo inteligente de comprobantes fiscales mexicanos.
 
-## 🚀 **Estado del Proyecto: COMPLETADO** ✅
+## ✅ Funcionalidades Implementadas
 
-### ✅ **Funcionalidades Implementadas**
+### 🔐 Sistema de Autenticación
+- **Login con roles**: Administrador y Usuario
+- **Credenciales predefinidas**:
+  - Administrador: `admin@empresa.com` / `admin123`
+  - Usuario: `maria@empresa.com` / `user123`
+- **Datos específicos por usuario**: Cada usuario solo ve sus propios gastos
+- **Sesión automática**: Cierre automático cuando el usuario declina registrar más gastos
 
-#### 🔐 **Sistema de Autenticación Completo**
-- ✅ Login seguro con validación de credenciales
-- ✅ Dos tipos de usuarios: **Administrador** y **Usuario**
-- ✅ Sistema de registro con aprobación administrativa
-- ✅ Gestión de sesiones con localStorage
-- ✅ Logout seguro con limpieza de datos
+### 💰 Gestión de Proyectos y Presupuestos
+- **Proyectos predefinidos** con presupuestos establecidos:
+  - Proyecto Alpha: $50,000 MXN
+  - Proyecto Beta: $30,000 MXN
+  - Proyecto Gamma: $75,000 MXN
+- **Validación en tiempo real**: Alertas cuando un gasto excede el saldo disponible
+- **Cálculo automático**: Saldo = Presupuesto - Gastos registrados
 
-#### 👥 **Gestión de Usuarios**
-- ✅ Registro de nuevos usuarios (status: pending)
-- ✅ Aprobación/rechazo por administrador
-- ✅ Notificaciones automáticas (simuladas)
-- ✅ Roles diferenciados con permisos específicos
+### 📋 Tipos de Comprobantes
 
-#### 📊 **Gestión de Proyectos**
-- ✅ **SOLUCIONADO**: Botón crear proyecto funciona perfectamente
-- ✅ Creación de proyectos por administradores
-- ✅ Asignación de presupuestos iniciales
-- ✅ Lista de proyectos activos
-- ✅ Selección de proyecto por usuario
+#### 🧾 Facturas (XML + PDF)
+- **Doble archivo requerido**: XML (datos estructurados) + PDF (representación visual)
+- **Procesamiento XML inteligente**: 
+  - Extracción automática de fecha, monto y concepto desde CFDI 3.3/4.0
+  - Soporte para namespaces `cfdi:Comprobante` y `Comprobante`
+  - Validación de estructura XML
+- **Auto-llenado de campos**: Los datos del XML completan automáticamente el formulario
+- **Almacenamiento dual**: Ambos archivos se guardan en base64 para el reporte
 
-#### 📱 **Captura de Fotos Móvil**
-- ✅ Acceso nativo a cámara del dispositivo
-- ✅ Interfaz optimizada tipo scanner
-- ✅ Captura con overlay de guía
-- ✅ Switch entre cámara frontal/trasera
-- ✅ Preview y retomar foto
-- ✅ Mejoras automáticas de imagen
+#### 📸 Tickets/Recibos
+- **Captura de imagen**: Subida de fotografías de tickets
+- **Preview inmediato**: Vista previa de la imagen seleccionada
+- **Almacenamiento base64**: Imágenes embebidas en los datos para export
 
-#### 🔍 **Sistema OCR Inteligente**
-- ✅ Simulación de detección de montos
-- ✅ Múltiples patrones de reconocimiento (pesos mexicanos)
-- ✅ Detección de palabras clave: total, subtotal, importe
-- ✅ Confidence score del OCR
-- ✅ Campo editable para correcciones
+#### ✏️ Registro Manual
+- **Sin comprobante**: Captura manual de datos
+- **Validación completa**: Todos los campos requeridos
+- **Flexibilidad total**: Para gastos sin documentos físicos
 
-#### 💸 **Registro de Gastos**
-- ✅ Captura fotográfica de recibos
-- ✅ Categorización: Producción, Comercial, Administración
-- ✅ Detección automática de montos via OCR
-- ✅ Fecha/hora automática de registro
-- ✅ Descripción opcional del gasto
+### 🎯 Diálogos Personalizados
+- **Confirmaciones SÍ/NO**: Reemplazan los alerts estándar del navegador
+- **Cierre automático**: Logout automático cuando el usuario selecciona "NO" en "¿Deseas registrar otro gasto?"
+- **Interfaz nativa**: Diseño consistente con la aplicación
 
-#### 💰 **Cálculo de Saldos**
-- ✅ **Fórmula implementada**: `Presupuesto + Depósitos - Gastos = Saldo`
-- ✅ Actualización en tiempo real
-- ✅ Visualización en dashboard principal
-- ✅ Indicadores visuales por estado (positivo/negativo)
-- ✅ Sistema de depósitos por administrador
+### 📊 Sistema de Reportes
+- **Filtros avanzados**: Por proyecto y categoría
+- **Estadísticas en tiempo real**:
+  - Total de gastos
+  - Número de registros
+  - Promedio por gasto
+- **Indicadores visuales**: Iconos para distinguir tipos de archivos:
+  - 🖼️ Imagen (azul)
+  - 📄 XML (verde)  
+  - 📑 PDF (rojo)
 
-#### 📈 **Sistema de Reportes**
-- ✅ Filtros por proyecto, categoría y periodo
-- ✅ Resumen estadístico completo
-- ✅ Tabla detallada de gastos
-- ✅ Exportación a PDF (simulada)
-- ✅ Exportación a Excel (simulada)
-- ✅ Vista cronológica de transacciones
+### 📁 Exportación y Persistencia
+- **Export JSON completo**: Descarga todos los datos incluyendo archivos base64
+- **Opción de reset mensual**: Limpieza de datos para cierre de mes
+- **Confirmación doble**: Protección contra borrado accidental
+- **Almacenamiento local**: Datos persistentes en localStorage del navegador
 
-#### 🛠 **Sistema de Debugging Avanzado**
-- ✅ Logging completo con niveles
-- ✅ Manejo robusto de errores
-- ✅ Validaciones exhaustivas
-- ✅ Monitoreo de performance
-- ✅ Panel de debug visual
-- ✅ Exportación de logs
+### 📱 Interfaz Mobile-First
+- **Diseño responsivo**: Optimizado para dispositivos móviles
+- **Tailwind CSS**: Framework moderno para estilos
+- **Font Awesome**: Iconografía profesional
+- **Sin elementos debug**: Interfaz limpia sin botones de desarrollo
 
-#### 📱 **PWA y Móvil**
-- ✅ Instalable como aplicación nativa
-- ✅ Funcionamiento offline con Service Worker
-- ✅ Responsive design mobile-first
-- ✅ Touch-friendly interface
-- ✅ Navegación inferior móvil
-- ✅ Safe area support
+## 🚀 URIs y Rutas Funcionales
 
-## 🔧 **Arquitectura Técnica**
+### Página Principal
+- **/** - Aplicación completa (index-clean.html)
+- **Pantalla de login** - Autenticación inicial
+- **Dashboard** - Vista principal con balance y acciones rápidas
 
-### **Frontend Stack**
-- **HTML5** con semántica moderna
-- **CSS3** + **Tailwind CSS** para styling
-- **JavaScript ES6+** modular
-- **PWA** con Service Worker
-- **Font Awesome** para iconografía
+### Flujos de Usuario
+1. **Login** → **Selección de Proyecto** → **Dashboard** 
+2. **Registrar Gasto** → **Tipo de Comprobante** → **Formulario** → **Confirmación**
+3. **Ver Reportes** → **Filtros** → **Tabla de Datos** → **Export**
 
-### **Persistencia de Datos**
-- **localStorage** para almacenamiento local
-- **Datos demo** inicializados automáticamente
-- **Esquemas de datos** estructurados:
-  - `users` - Gestión de usuarios y roles
-  - `projects` - Proyectos y presupuestos
-  - `expenses` - Gastos registrados
-  - `deposits` - Depósitos administrativos
+## 🔧 Arquitectura Técnica
 
-### **Arquitectura Modular**
-```
-js/
-├── debug.js      # Sistema de debugging y logging
-├── database.js   # Capa de abstracción de datos
-├── auth.js       # Autenticación y sesiones
-├── projects.js   # Gestión de proyectos
-├── camera.js     # Captura de fotos móvil
-├── ocr.js        # Procesamiento OCR simulado
-├── expenses.js   # Sistema de gastos
-├── reports.js    # Generación de reportes
-└── app.js        # Coordinador principal
-```
+### Clases JavaScript
+- **`DataManager`**: Gestión de datos en localStorage
+  - Métodos: `saveProject()`, `getUserExpenses()`, `addExpense()`, `exportData()`
+- **`ExpenseApp`**: Controlador principal de la aplicación  
+  - Métodos: `showCustomConfirm()`, `handleXMLFile()`, `handlePDFFile()`, `saveExpense()`
 
-## 🎯 **Credenciales de Acceso**
+### Estructura de Datos
+```javascript
+// Proyecto
+{
+  id: "uuid",
+  name: "string",
+  budget: number,
+  user_id: "string"
+}
 
-### 👨‍💼 **Administrador Principal**
-- **Email**: `ramon.rivas@me.com`
-- **Password**: `admin123`
-- **Permisos**: Crear proyectos, aprobar usuarios, gestionar depósitos
-
-### 👨‍💼 **Administrador Demo**
-- **Email**: `admin@sistema.com`
-- **Password**: `admin123`
-- **Permisos**: Crear proyectos, aprobar usuarios, gestionar depósitos
-
-### 👤 **Usuario Regular**
-- **Email**: `maria@empresa.com`
-- **Password**: `user123`
-- **Permisos**: Registrar gastos, ver reportes
-
-### 📋 **Usuario Pendiente**
-- **Email**: `juan@empresa.com`
-- **Password**: `user123`
-- **Estado**: Pendiente de aprobación
-
-## 🚀 **Cómo Usar la Aplicación**
-
-### 1. **Inicio de Sesión**
-1. Abrir `index.html` en un navegador moderno
-2. Usar credenciales demo o registrar nueva cuenta
-3. Esperar aprobación del administrador (si es nuevo usuario)
-
-### 2. **Crear Proyecto (Admin)**
-1. Login como administrador
-2. Hacer clic en **"Crear Nuevo Proyecto"**
-3. Completar formulario: nombre, descripción, presupuesto
-4. El proyecto aparecerá disponible para todos los usuarios
-
-### 3. **Registrar Gasto**
-1. Seleccionar proyecto del dropdown
-2. Hacer clic en **"Registrar Gasto"**
-3. **"Iniciar Cámara"** para capturar recibo
-4. Capturar foto del ticket/recibo
-5. El OCR detectará automáticamente el monto
-6. Seleccionar categoría: Producción/Comercial/Administración
-7. Editar monto si es necesario
-8. **"Guardar Gasto"** - El saldo se actualiza automáticamente
-
-### 4. **Ver Reportes**
-1. Hacer clic en **"Ver Reportes"**
-2. Aplicar filtros: proyecto, categoría, periodo
-3. **"Generar Reporte"** para ver estadísticas
-4. Exportar a PDF/Excel (simulado)
-
-### 5. **Gestionar Saldos**
-- El saldo se calcula automáticamente: `Presupuesto + Depósitos - Gastos`
-- Visible en tiempo real en el dashboard
-- Los administradores pueden agregar depósitos
-
-## 🔧 **Debugging y Desarrollo**
-
-### **Activar Modo Debug**
-- **Keyboard shortcut**: `Ctrl + Shift + D`
-- **Automático** en localhost/127.0.0.1
-- Panel de debug en esquina superior derecha
-
-### **Exportar Logs**
-- **Keyboard shortcut**: `Ctrl + Shift + L`
-- Descarga archivo JSON con logs completos
-- Útil para debugging en producción
-
-### **Resetear Datos Demo**
-- **Keyboard shortcut**: `Ctrl + Shift + R`
-- Borra todos los datos y reinicia con datos demo
-- Útil para testing y desarrollo
-
-### **Validaciones Implementadas**
-- ✅ Validación de formularios en tiempo real
-- ✅ Validación de tipos de datos
-- ✅ Sanitización de inputs
-- ✅ Manejo de errores graceful
-- ✅ Feedback visual al usuario
-
-## 📱 **Optimización Móvil**
-
-### **Características PWA**
-- ✅ **Instalable** desde navegador móvil
-- ✅ **Offline** funcional con Service Worker
-- ✅ **Responsive** design mobile-first
-- ✅ **Touch-friendly** con áreas táctiles de 48px+
-- ✅ **Navegación inferior** nativa
-- ✅ **Safe areas** para dispositivos con notch
-
-### **Funcionalidades Nativas**
-- ✅ **Cámara** acceso directo
-- ✅ **Vibración** feedback táctil (opcional)
-- ✅ **Orientación** automática
-- ✅ **Zoom** prevenido para mejor UX
-
-## 🚀 **Despliegue**
-
-### **GitHub Pages**
-1. Subir todos los archivos al repositorio
-2. Activar GitHub Pages en Settings
-3. La app estará disponible online
-4. ✅ Compatible con subdominio GitHub
-
-### **Servidor Local**
-```bash
-# Opción 1: Python
-python -m http.server 8000
-
-# Opción 2: Node.js
-npx serve .
-
-# Opción 3: PHP
-php -S localhost:8000
+// Gasto
+{
+  id: "uuid",
+  project_id: "string", 
+  user_id: "string",
+  type: "factura|ticket|manual",
+  amount: number,
+  description: "string",
+  category: "string",
+  expense_date: timestamp,
+  created_at: timestamp,
+  // Para facturas
+  xmlData: "string_base64",
+  pdfData: "string_base64", 
+  xmlFileName: "string",
+  pdfFileName: "string",
+  // Para tickets
+  imageData: "string_base64",
+  fileName: "string"
+}
 ```
 
-### **Hosting Estático**
-- ✅ **Netlify** - Deploy directo desde Git
-- ✅ **Vercel** - Optimización automática
-- ✅ **GitHub Pages** - Gratuito y confiable
-- ✅ **Firebase Hosting** - PWA optimizado
+## 🌟 Características Destacadas
 
-## 🔮 **Mejoras Futuras Recomendadas**
+### 🧠 Procesamiento Inteligente de XML
+- **Parser nativo**: Uso de `DOMParser` para procesar CFDI
+- **Extracción automática**: Fecha, monto total y descripción del primer concepto
+- **Manejo de errores**: Validación y feedback al usuario
+- **Compatibilidad amplia**: CFDI 3.3 y 4.0
 
-### **Integraciones Reales**
-1. **OCR Real**: Integrar Tesseract.js o Google Vision API
-2. **Base de datos**: Migrar a MySQL/PostgreSQL
-3. **Backend**: Node.js/Express para APIs reales
-4. **Email**: SendGrid/NodeMailer para notificaciones
-5. **Autenticación**: JWT tokens con refresh
+### 🎨 UX/UI Optimizada
+- **Flujo intuitivo**: Pasos claros y lógicos
+- **Feedback visual**: Estados de carga y confirmación
+- **Accesibilidad**: Iconos descriptivos y mensajes claros
+- **Performance**: Aplicación de página única (SPA) ultra-rápida
 
-### **Funcionalidades Avanzadas**
-1. **Geolocalización** en gastos
-2. **Múltiples monedas** y conversión
-3. **Categorías personalizadas**
-4. **Workflow de aprobación** de gastos
-5. **Dashboard analytics** avanzado
-6. **Sincronización offline** mejorada
+### 🔒 Validación Robusta
+- **Presupuesto**: Alertas antes de exceder límites
+- **Archivos**: Validación de tipos y formatos
+- **Formularios**: Campos requeridos y validación en tiempo real
+- **Datos**: Sanitización y verificación de integridad
 
-### **Integraciones Empresariales**
-1. **Contabilidad**: QuickBooks, SAP
-2. **ERP**: Integración con sistemas existentes
-3. **BI Tools**: Power BI, Tableau
-4. **Single Sign-On** (SSO)
+## 🚧 Próximos Desarrollos Recomendados
 
-## 🐛 **Troubleshooting**
+### Funcionalidades Avanzadas
+- [ ] **OCR inteligente**: Detección automática de montos en imágenes de tickets
+- [ ] **Categorización automática**: ML para sugerir categorías basado en descripciones
+- [ ] **Reportes gráficos**: Charts.js para visualizaciones avanzadas
+- [ ] **Notificaciones push**: Recordatorios y alertas de presupuesto
 
-### **Problema: Botón crear proyecto no responde**
-- ✅ **SOLUCIONADO** en esta versión
-- Verificar que usuario sea administrador
-- Revisar console para errores JavaScript
-- Usar `Ctrl+Shift+D` para activar debugging
+### Integraciones
+- [ ] **API REST**: Backend para sincronización multi-dispositivo  
+- [ ] **Base de datos**: PostgreSQL o MongoDB para escalabilidad
+- [ ] **Autenticación OAuth**: Login con Google/Microsoft
+- [ ] **Almacenamiento en la nube**: AWS S3 para archivos grandes
 
-### **Problema: Cámara no funciona**
-- Verificar permisos de cámara en navegador
-- Usar HTTPS (requerido para MediaDevices API)
-- Probar en dispositivo físico (no siempre funciona en desktop)
+### Mejoras Técnicas
+- [ ] **Service Worker**: Funcionalidad offline completa
+- [ ] **Compresión**: Optimización de archivos base64
+- [ ] **Backup automático**: Exportación programada
+- [ ] **Multi-idioma**: Soporte i18n para otros mercados
 
-### **Problema: PWA no se instala**
-- Verificar que manifest.json sea válido
-- Usar HTTPS (requerido para PWA)
-- Verificar Service Worker en DevTools
+## 📋 Instrucciones de Uso
 
-## 📊 **Métricas del Proyecto**
+1. **Inicio**: Abrir `index-clean.html` en cualquier navegador moderno
+2. **Login**: Usar credenciales predefinidas según el rol
+3. **Proyecto**: Seleccionar proyecto activo para comenzar
+4. **Gastos**: Clic en "Registrar Gasto" y seguir el flujo según el tipo
+5. **Facturas**: Subir PRIMERO el XML (auto-llena campos), después el PDF  
+6. **Reportes**: Usar filtros y exportar datos cuando sea necesario
+7. **Export**: Descargar JSON con opción de reset mensual
 
-### **Código**
-- **Archivos**: 15+ archivos organizados
-- **Líneas**: ~2500+ líneas de código
-- **Funciones**: 100+ funciones implementadas
-- **Cobertura**: Todas las funcionalidades solicitadas ✅
+## 🎯 Estado del Proyecto
 
-### **Funcionalidades**
-- **Autenticación**: 100% implementada ✅
-- **Proyectos**: 100% implementada ✅
-- **Gastos**: 100% implementada ✅
-- **Reportes**: 100% implementada ✅
-- **Móvil**: 100% optimizada ✅
+**✅ COMPLETADO**: Aplicación funcional con todas las características solicitadas
+- Autenticación por roles ✅
+- Tres tipos de comprobantes ✅  
+- Procesamiento XML automático ✅
+- Validación de presupuestos ✅
+- Exportación completa ✅
+- Interfaz mobile-optimizada ✅
+- Diálogos personalizados SÍ/NO ✅
 
-### **Calidad**
-- **Debugging**: Sistema completo ✅
-- **Validaciones**: Exhaustivas ✅
-- **Error Handling**: Robusto ✅
-- **UX/UI**: Mobile-first ✅
-- **Performance**: Optimizada ✅
-
----
-
-## 🎉 **¡Proyecto Completado Exitosamente!**
-
-**Esta webapp está 100% funcional y lista para usar.** Todas las características solicitadas han sido implementadas con debugging completo, validaciones robustas y optimización móvil.
-
-**El bug crítico del botón crear proyecto ha sido solucionado** y todo el sistema funciona correctamente con manejo de errores graceful y feedback visual al usuario.
-
-**🚀 ¡Listo para desplegar en tu subdominio GitHub!**
+**🎉 LISTO PARA PRODUCCIÓN**: La aplicación está completamente funcional y lista para uso empresarial real.
