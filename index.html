@@ -173,6 +173,39 @@
                     </div>
                 </div>
 
+                <!-- Factura Files Section -->
+                <div id="facturaFilesSection" class="hidden space-y-4">
+                    <!-- XML File (PRIMERO - para extraer datos) -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            1. Archivo XML <span class="text-red-500">*</span>
+                        </label>
+                        <input type="file" id="xmlFileInput" accept=".xml" 
+                               class="w-full px-3 py-2 border rounded-lg">
+                        <p class="text-xs text-gray-500 mt-1">
+                            📄 El XML contiene los datos que llenarán automáticamente los campos
+                        </p>
+                        <div id="xmlStatus" class="hidden mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-800">
+                            ✅ XML procesado - Campos llenados automáticamente
+                        </div>
+                    </div>
+
+                    <!-- PDF File (SEGUNDO) -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            2. Archivo PDF <span class="text-red-500">*</span>
+                        </label>
+                        <input type="file" id="pdfFileInput" accept=".pdf" 
+                               class="w-full px-3 py-2 border rounded-lg">
+                        <p class="text-xs text-gray-500 mt-1">
+                            📑 Representación visual de la factura
+                        </p>
+                        <div id="pdfStatus" class="hidden mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+                            ✅ PDF cargado correctamente
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Date -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Fecha:</label>
@@ -386,6 +419,8 @@
                 this.data = new DataManager();
                 this.currentProject = null;
                 this.currentExpenseType = null;
+                this.currentXMLData = null;
+                this.currentPDFData = null;
                 
                 this.init();
             }
@@ -418,6 +453,10 @@
                 document.getElementById('expenseForm').addEventListener('submit', (e) => this.saveExpense(e));
                 document.getElementById('expenseAmount').addEventListener('input', (e) => this.checkBalance(e.target.value));
                 document.getElementById('fileInput').addEventListener('change', (e) => this.handleFileUpload(e));
+                
+                // Factura files
+                document.getElementById('xmlFileInput').addEventListener('change', (e) => this.handleXMLFile(e));
+                document.getElementById('pdfFileInput').addEventListener('change', (e) => this.handlePDFFile(e));
 
                 // Modal controls
                 document.getElementById('closeExpenseTypeModal').addEventListener('click', () => this.closeModal('expenseTypeModal'));
@@ -539,6 +578,108 @@
                 }
             }
 
+            handleXMLFile(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const xmlText = event.target.result;
+                        const parser = new DOMParser();
+                        const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+
+                        // Verificar si hay errores en el XML
+                        if (xmlDoc.querySelector('parsererror')) {
+                            throw new Error('XML no válido');
+                        }
+
+                        // Extraer datos del XML (CFDI 3.3 o 4.0)
+                        const comprobante = xmlDoc.querySelector('cfdi\\:Comprobante, Comprobante');
+                        if (!comprobante) {
+                            throw new Error('No se encontró el comprobante en el XML');
+                        }
+
+                        // Extraer fecha (formato: 2024-01-15T10:30:00)
+                        const fechaTimbrado = comprobante.getAttribute('Fecha');
+                        if (fechaTimbrado) {
+                            const fecha = fechaTimbrado.split('T')[0]; // Solo la fecha, sin hora
+                            document.getElementById('expenseDate').value = fecha;
+                        }
+
+                        // Extraer monto total
+                        const total = comprobante.getAttribute('Total');
+                        if (total) {
+                            document.getElementById('expenseAmount').value = parseFloat(total);
+                        }
+
+                        // Extraer concepto/descripción del primer concepto
+                        const concepto = xmlDoc.querySelector('cfdi\\:Concepto, Concepto');
+                        if (concepto) {
+                            const descripcion = concepto.getAttribute('Descripcion') || 
+                                               concepto.getAttribute('description') ||
+                                               'Factura CFDI';
+                            document.getElementById('expenseDescription').value = descripcion.substring(0, 100); // Límite de caracteres
+                        }
+
+                        // Guardar el XML en base64 para almacenamiento
+                        this.currentXMLData = event.target.result;
+
+                        // Mostrar estado de éxito
+                        document.getElementById('xmlStatus').classList.remove('hidden');
+                        
+                        // Actualizar validación del balance
+                        this.validateBalance();
+
+                        console.log('✅ XML procesado exitosamente');
+
+                    } catch (error) {
+                        console.error('Error procesando XML:', error);
+                        alert('Error al procesar el archivo XML: ' + error.message);
+                        
+                        // Limpiar el input si hay error
+                        e.target.value = '';
+                        document.getElementById('xmlStatus').classList.add('hidden');
+                    }
+                };
+
+                reader.readAsText(file);
+            }
+
+            handlePDFFile(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                if (file.type !== 'application/pdf') {
+                    alert('Por favor selecciona un archivo PDF válido');
+                    e.target.value = '';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        // Guardar el PDF en base64 para almacenamiento
+                        this.currentPDFData = event.target.result;
+
+                        // Mostrar estado de éxito
+                        document.getElementById('pdfStatus').classList.remove('hidden');
+
+                        console.log('✅ PDF cargado exitosamente');
+
+                    } catch (error) {
+                        console.error('Error procesando PDF:', error);
+                        alert('Error al procesar el archivo PDF: ' + error.message);
+                        
+                        // Limpiar el input si hay error
+                        e.target.value = '';
+                        document.getElementById('pdfStatus').classList.add('hidden');
+                    }
+                };
+
+                reader.readAsDataURL(file);
+            }
+
             loadRecentExpenses() {
                 if (!this.currentProject) return;
 
@@ -555,7 +696,11 @@
                         <div class="flex-1">
                             <p class="font-medium text-sm">${expense.description || 'Sin descripción'}</p>
                             <p class="text-xs text-gray-600">${expense.category} • ${new Date(expense.expense_date || expense.created_at).toLocaleDateString('es-MX')}</p>
-                            ${expense.imageData ? '<i class="fas fa-image text-xs text-blue-500" title="Con imagen"></i>' : ''}
+                            <div class="flex gap-1 mt-1">
+                                ${expense.imageData ? '<i class="fas fa-image text-xs text-blue-500" title="Con imagen"></i>' : ''}
+                                ${expense.xmlData ? '<i class="fas fa-file-code text-xs text-green-500" title="Con XML"></i>' : ''}
+                                ${expense.pdfData ? '<i class="fas fa-file-pdf text-xs text-red-500" title="Con PDF"></i>' : ''}
+                            </div>
                         </div>
                         <div class="text-right">
                             <p class="font-bold text-red-600">-$${expense.amount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
@@ -588,13 +733,20 @@
 
                 document.getElementById('expenseModalTitle').textContent = titles[type];
                 
-                // Show/hide file section
+                // Show/hide appropriate file sections
                 const fileSection = document.getElementById('fileSection');
-                if (type === 'factura' || type === 'ticket') {
+                const facturaFilesSection = document.getElementById('facturaFilesSection');
+                
+                if (type === 'factura') {
+                    fileSection.classList.add('hidden');
+                    facturaFilesSection.classList.remove('hidden');
+                } else if (type === 'ticket') {
                     fileSection.classList.remove('hidden');
-                    document.getElementById('fileInput').accept = type === 'factura' ? '.xml,.pdf' : 'image/*';
+                    facturaFilesSection.classList.add('hidden');
+                    document.getElementById('fileInput').accept = 'image/*';
                 } else {
                     fileSection.classList.add('hidden');
+                    facturaFilesSection.classList.add('hidden');
                 }
 
                 // Reset form
@@ -602,6 +754,8 @@
                 document.getElementById('expenseDate').value = new Date().toISOString().split('T')[0];
                 document.getElementById('balanceWarning').classList.add('hidden');
                 document.getElementById('imagePreview').classList.add('hidden');
+                document.getElementById('xmlStatus').classList.add('hidden');
+                document.getElementById('pdfStatus').classList.add('hidden');
 
                 this.showModal('expenseModal');
             }
@@ -636,22 +790,40 @@
                     description: document.getElementById('expenseDescription').value,
                 };
 
-                // Handle file upload (save as base64 for images)
-                const fileInput = document.getElementById('fileInput');
-                if (fileInput.files.length > 0) {
-                    const file = fileInput.files[0];
-                    formData.fileName = file.name;
-                    formData.fileSize = file.size;
-                    
-                    if (file.type.startsWith('image/')) {
-                        // Save image as base64
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                            formData.imageData = event.target.result;
-                            this.completeExpenseSave(formData);
-                        };
-                        reader.readAsDataURL(file);
-                        return; // Wait for file read to complete
+                // Handle different file types
+                if (this.currentExpenseType === 'factura') {
+                    // Para facturas: XML y PDF
+                    if (this.currentXMLData && this.currentPDFData) {
+                        formData.xmlData = this.currentXMLData;
+                        formData.pdfData = this.currentPDFData;
+                        
+                        // Nombres de archivos
+                        const xmlInput = document.getElementById('xmlFileInput');
+                        const pdfInput = document.getElementById('pdfFileInput');
+                        if (xmlInput.files[0]) formData.xmlFileName = xmlInput.files[0].name;
+                        if (pdfInput.files[0]) formData.pdfFileName = pdfInput.files[0].name;
+                    } else {
+                        alert('Por favor selecciona tanto el archivo XML como el PDF para la factura');
+                        return;
+                    }
+                } else {
+                    // Para tickets y manual: archivo de imagen opcional
+                    const fileInput = document.getElementById('fileInput');
+                    if (fileInput.files.length > 0) {
+                        const file = fileInput.files[0];
+                        formData.fileName = file.name;
+                        formData.fileSize = file.size;
+                        
+                        if (file.type.startsWith('image/')) {
+                            // Save image as base64
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                                formData.imageData = event.target.result;
+                                this.completeExpenseSave(formData);
+                            };
+                            reader.readAsDataURL(file);
+                            return; // Wait for file read to complete
+                        }
                     }
                 }
 
@@ -674,9 +846,20 @@
                     
                     // Ask if user wants to add another expense
                     setTimeout(() => {
-                        if (confirm('¿Deseas registrar otro gasto?')) {
-                            this.showExpenseTypeModal();
-                        }
+                        this.showCustomConfirm(
+                            '¿Deseas registrar otro gasto?',
+                            () => {
+                                // SÍ - Otro gasto
+                                this.showExpenseTypeModal();
+                            },
+                            () => {
+                                // NO - Cerrar sesión automáticamente
+                                this.showSuccessMessage('Cerrando sesión automáticamente...');
+                                setTimeout(() => {
+                                    this.logout();
+                                }, 2000);
+                            }
+                        );
                     }, 1500);
 
                 } catch (error) {
@@ -716,6 +899,8 @@
                         <td class="border border-gray-300 px-4 py-2">
                             ${expense.description}
                             ${expense.imageData ? ' <i class="fas fa-image text-blue-500 ml-1" title="Con imagen adjunta"></i>' : ''}
+                            ${expense.xmlData ? ' <i class="fas fa-file-code text-green-500 ml-1" title="Con archivo XML"></i>' : ''}
+                            ${expense.pdfData ? ' <i class="fas fa-file-pdf text-red-500 ml-1" title="Con archivo PDF"></i>' : ''}
                         </td>
                         <td class="border border-gray-300 px-4 py-2">${expense.category}</td>
                         <td class="border border-gray-300 px-4 py-2 text-right">$${expense.amount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
@@ -733,6 +918,25 @@
 
             closeModal(modalId) {
                 document.getElementById(modalId).classList.remove('show');
+                
+                // Limpiar datos temporales cuando se cierre el modal de gastos
+                if (modalId === 'expenseModal') {
+                    this.currentXMLData = null;
+                    this.currentPDFData = null;
+                    
+                    // Limpiar estados visuales
+                    document.getElementById('xmlStatus').classList.add('hidden');
+                    document.getElementById('pdfStatus').classList.add('hidden');
+                    document.getElementById('imagePreview').classList.add('hidden');
+                    
+                    // Limpiar formulario
+                    document.getElementById('expenseForm').reset();
+                    
+                    // Limpiar inputs de archivo
+                    document.getElementById('fileInput').value = '';
+                    document.getElementById('xmlFileInput').value = '';
+                    document.getElementById('pdfFileInput').value = '';
+                }
             }
 
             exportData() {
@@ -761,6 +965,49 @@
                 } catch (error) {
                     alert('Error al exportar datos: ' + error.message);
                 }
+            }
+
+            showCustomConfirm(message, onYes, onNo) {
+                // Crear modal personalizado con botones SÍ/NO
+                const modal = document.createElement('div');
+                modal.className = 'modal show';
+                modal.innerHTML = `
+                    <div class="modal-content p-6 w-full max-w-sm">
+                        <div class="text-center mb-6">
+                            <i class="fas fa-question-circle text-4xl text-blue-500 mb-4"></i>
+                            <h3 class="text-lg font-bold text-gray-800 mb-2">${message}</h3>
+                        </div>
+                        <div class="flex gap-3">
+                            <button id="confirmYes" class="btn bg-green-500 hover:bg-green-600 text-white flex-1">
+                                <i class="fas fa-check mr-2"></i>SÍ
+                            </button>
+                            <button id="confirmNo" class="btn bg-red-500 hover:bg-red-600 text-white flex-1">
+                                <i class="fas fa-times mr-2"></i>NO
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(modal);
+
+                // Eventos de botones
+                modal.querySelector('#confirmYes').addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                    onYes();
+                });
+
+                modal.querySelector('#confirmNo').addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                    onNo();
+                });
+
+                // Cerrar con clic fuera del modal
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        document.body.removeChild(modal);
+                        onNo(); // Por defecto NO si se cierra
+                    }
+                });
             }
 
             showSuccessMessage(message) {
