@@ -2,721 +2,188 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="mobile-web-app-capable" content="yes">
-    
-    <title>Gestor de Gastos - Proyectos</title>
-    
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json">
-    
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-    <link rel="apple-touch-icon" href="icons/icon-192.png">
-    
-    <!-- CSS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Gastos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/styles.css">
-    
-    <!-- Debugging CSS -->
     <style>
-        .debug-mode .debug-info {
-            display: block !important;
-        }
-        .debug-info {
-            display: none;
-            position: fixed;
-            top: 0;
-            right: 0;
-            background: rgba(255, 0, 0, 0.8);
-            color: white;
-            padding: 5px;
-            z-index: 9999;
-            font-size: 10px;
-            max-width: 200px;
-            word-wrap: break-word;
-        }
-        
-        /* Touch-friendly buttons */
-        .btn-touch {
-            min-height: 48px;
-            min-width: 48px;
-            padding: 12px 24px;
-            font-size: 16px;
-        }
-        
-        /* Loading states */
-        .btn-loading {
-            position: relative;
-            pointer-events: none;
-        }
-        
-        .btn-loading::after {
-            content: '';
-            position: absolute;
-            width: 16px;
-            height: 16px;
-            top: 50%;
-            left: 50%;
-            margin-left: -8px;
-            margin-top: -8px;
-            border-radius: 50%;
-            border: 2px solid transparent;
-            border-top-color: currentColor;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* Modal styles */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        
-        .modal.show {
-            display: flex;
-        }
-        
-        .modal-content {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            width: 100%;
-            max-width: 400px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        
-        /* Responsive text */
-        @media (max-width: 640px) {
-            .text-responsive {
-                font-size: 14px;
-            }
-            
-            .title-responsive {
-                font-size: 20px;
-            }
-        }
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; }
+        .modal.show { display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: white; border-radius: 8px; max-width: 90vw; max-height: 90vh; overflow-y: auto; }
+        .btn { padding: 12px 24px; border-radius: 8px; font-weight: 600; transition: all 0.2s; cursor: pointer; border: none; }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
-    <!-- Debug Panel -->
-    <div class="debug-info" id="debugPanel">
-        <strong>DEBUG:</strong><br>
-        <span id="debugContent">Sistema iniciado</span>
-    </div>
+<body class="bg-gray-100">
 
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-lg p-6 text-center">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p class="text-gray-700">Cargando...</p>
+    <!-- Header -->
+    <nav class="bg-blue-600 text-white p-4">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-bold">Gestor de Gastos</h1>
+                <p class="text-sm opacity-90" id="userInfo">Usuario</p>
+            </div>
+            <button id="logoutBtn" class="btn bg-blue-700 hover:bg-blue-800 text-white px-3 py-2">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
         </div>
-    </div>
+    </nav>
 
-    <!-- Main App Container -->
-    <div id="app" class="min-h-screen">
-        <!-- Navigation Bar -->
-        <nav id="navbar" class="bg-blue-600 text-white p-4 shadow-lg hidden">
-            <div class="flex justify-between items-center">
-                <div>
-                    <h1 class="title-responsive font-bold">Gestor de Gastos</h1>
-                    <p class="text-blue-200 text-sm" id="userInfo">Bienvenido</p>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-sm bg-blue-500 px-2 py-1 rounded" id="saldoInfo">Saldo: $0.00</span>
-                    <button id="logoutBtn" class="btn-touch bg-blue-700 hover:bg-blue-800 px-2 py-1 rounded text-sm">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </button>
-                </div>
-            </div>
-        </nav>
-
-        <!-- Content Area -->
-        <main id="mainContent" class="pb-20">
-            <!-- Login Screen -->
-            <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
-                <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
-                    <div class="text-center mb-8">
-                        <i class="fas fa-receipt text-4xl text-blue-600 mb-4"></i>
-                        <h1 class="title-responsive font-bold text-gray-800">Gestor de Gastos</h1>
-                        <p class="text-gray-600 text-responsive">Administra tus proyectos</p>
-                    </div>
-                    
-                    <form id="loginForm" class="space-y-4">
-                        <div>
-                            <label class="block text-gray-700 text-sm font-medium mb-2">Email:</label>
-                            <input type="email" id="loginEmail" 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
-                                   placeholder="tu@email.com" required>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-gray-700 text-sm font-medium mb-2">Contraseña:</label>
-                            <input type="password" id="loginPassword" 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
-                                   placeholder="Tu contraseña" required>
-                        </div>
-                        
-                        <button type="submit" id="loginSubmit" 
-                                class="btn-touch w-full bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
-                            Iniciar Sesión
-                        </button>
-                    </form>
-                    
-                    <div class="mt-6 text-center">
-                        <button id="showRegisterBtn" class="text-blue-600 hover:text-blue-800 text-sm">
-                            ¿No tienes cuenta? Regístrate
-                        </button>
-                        <div class="mt-4 p-4 bg-gray-50 rounded-lg">
-                            <p class="text-xs text-gray-600 mb-2">Credenciales:</p>
-                            <p class="text-xs"><strong>Admin:</strong> ramon.rivas@me.com / admin123</p>
-                            <p class="text-xs"><strong>Demo Admin:</strong> admin@sistema.com / admin123</p>
-                            <p class="text-xs"><strong>Usuario:</strong> maria@empresa.com / user123</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Register Screen -->
-            <div id="registerScreen" class="min-h-screen flex items-center justify-center p-4 hidden">
-                <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
-                    <div class="text-center mb-6">
-                        <h2 class="title-responsive font-bold text-gray-800">Registro</h2>
-                        <p class="text-gray-600 text-responsive">Solicita tu cuenta</p>
-                    </div>
-                    
-                    <form id="registerForm" class="space-y-4">
-                        <input type="text" id="regName" placeholder="Nombre completo" 
-                               class="w-full px-4 py-3 border rounded-lg text-base" required>
-                        <input type="email" id="regEmail" placeholder="Email" 
-                               class="w-full px-4 py-3 border rounded-lg text-base" required>
-                        <input type="password" id="regPassword" placeholder="Contraseña" 
-                               class="w-full px-4 py-3 border rounded-lg text-base" required>
-                        
-                        <button type="submit" class="btn-touch w-full bg-green-600 hover:bg-green-700 text-white rounded-lg">
-                            Solicitar Registro
-                        </button>
-                    </form>
-                    
-                    <button id="backToLoginBtn" class="mt-4 w-full text-blue-600 hover:text-blue-800 text-sm">
-                        Volver al Login
-                    </button>
-                </div>
-            </div>
-
-            <!-- Botón de debugging temporal -->
-            <div id="debugResetBtn" class="fixed bottom-4 left-4 z-50">
-                <button onclick="window.auth?.forceDataReset()" class="bg-red-600 text-white text-xs px-3 py-2 rounded shadow-lg hover:bg-red-700">
-                    🔧 Reset Data
-                </button>
-            </div>
-
-            <!-- Debug Info Panel -->
-            <div id="debugLoginInfo" class="fixed bottom-4 right-4 bg-black bg-opacity-80 text-white text-xs p-3 rounded max-w-xs hidden">
-                <div><strong>Debug Info:</strong></div>
-                <div id="debugUsersCount">Users: Loading...</div>
-                <div id="debugStorageStatus">Storage: Loading...</div>
-                <button onclick="this.parentElement.classList.add('hidden')" class="text-red-300 hover:text-red-100 float-right">×</button>
-            </div>
-
-            <!-- Mostrar debug info -->
-            <div class="fixed top-4 right-4 z-40">
-                <button onclick="window.showDebugInfo()" class="bg-gray-800 text-white text-xs px-2 py-1 rounded">
-                    Debug
-                </button>
-            </div>
-        </main>
-
-        <!-- Script para debugging -->
-        <script>
-            window.showDebugInfo = function() {
-                const debugPanel = document.getElementById('debugLoginInfo');
-                const usersCount = document.getElementById('debugUsersCount');
-                const storageStatus = document.getElementById('debugStorageStatus');
-                
-                try {
-                    const users = JSON.parse(localStorage.getItem('table_users') || '[]');
-                    const activeAdmins = users.filter(u => u.role === 'admin' && u.status === 'active');
-                    
-                    usersCount.textContent = `Users: ${users.length} (${activeAdmins.length} active admins)`;
-                    storageStatus.textContent = `Storage: ${localStorage.length} items`;
-                    
-                    debugPanel.classList.remove('hidden');
-                    
-                    console.log('Debug Info:', {
-                        totalUsers: users.length,
-                        activeAdmins: activeAdmins.length,
-                        users: users,
-                        localStorage: Object.keys(localStorage)
-                    });
-                    
-                } catch (error) {
-                    storageStatus.textContent = `Storage Error: ${error.message}`;
-                    debugPanel.classList.remove('hidden');
-                }
-            }
-        </script>
-                </div>
-            </div>
-
-            <!-- Dashboard Screen -->
-            <div id="dashboardScreen" class="hidden">
-                <div class="p-3 space-y-3 min-h-screen">
-                    
-                    <!-- Project Selection Card - SIEMPRE VISIBLE -->
-                    <div class="bg-white rounded-lg shadow p-3">
-                        <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center">
-                            <i class="fas fa-folder-open mr-2 text-blue-600"></i>Proyecto
-                        </h2>
-                        <select id="headerProjectSelect" class="w-full px-3 py-3 border rounded-lg text-base">
-                            <option value="">Seleccionar proyecto...</option>
-                        </select>
-                    </div>
-
-                    <!-- Quick Actions Card - SIEMPRE VISIBLE -->
-                    <div class="bg-white rounded-lg shadow p-3">
-                        <h2 class="text-base font-bold text-gray-800 mb-3 flex items-center">
-                            <i class="fas fa-bolt mr-2 text-orange-500"></i>Acciones
-                        </h2>
-                        <div class="grid grid-cols-2 gap-2">
-                            <button id="addExpenseBtn" class="btn-touch bg-blue-500 hover:bg-blue-600 text-white rounded-lg p-3 text-center">
-                                <i class="fas fa-receipt text-xl mb-1 block"></i>
-                                <span class="text-xs">Registrar Gasto</span>
-                            </button>
-                            <button id="viewReportsBtn" class="btn-touch bg-purple-500 hover:bg-purple-600 text-white rounded-lg p-3 text-center">
-                                <i class="fas fa-chart-bar text-xl mb-1 block"></i>
-                                <span class="text-xs">Ver Reportes</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Current Balance Card -->
-                    <div id="balanceCard" class="bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg shadow p-4">
-                        <div class="flex items-center justify-between mb-2">
-                            <h3 class="text-base font-bold flex items-center">
-                                <i class="fas fa-wallet mr-2"></i>Saldo
-                            </h3>
-                            <i class="fas fa-dollar-sign text-xl opacity-70"></i>
-                        </div>
-                        <div class="text-3xl font-bold mb-1" id="currentBalance">$0.00</div>
-                        <p class="text-xs opacity-90">Presupuesto + Depósitos - Gastos</p>
-                    </div>
-
-                    <!-- Recent Expenses Card -->
-                    <div id="recentCard" class="bg-white rounded-lg shadow p-3">
-                        <h3 class="text-base font-bold text-gray-800 mb-3 flex items-center">
-                            <i class="fas fa-history mr-2 text-gray-500"></i>Gastos Recientes
-                        </h3>
-                        <div id="recentExpenses" class="space-y-2">
-                            <p class="text-gray-500 text-center py-3 text-sm">No hay gastos registrados</p>
-                        </div>
-                    </div>
-
-                    <!-- Admin Controls Card -->
-                    <div id="adminControls" class="hidden bg-white rounded-lg shadow p-3">
-                        <h2 class="text-base font-bold text-gray-800 mb-3 flex items-center">
-                            <i class="fas fa-cog mr-2 text-gray-500"></i>Admin
-                        </h2>
-                        <button id="createProjectBtn" class="btn-touch bg-green-600 hover:bg-green-700 text-white rounded-lg w-full p-2">
-                            <i class="fas fa-plus mr-2"></i>Crear Proyecto
-                        </button>
-                    </div>
-
-                </div>
-            </div>
-        </main>
-
-        <!-- Bottom Navigation (Mobile) -->
-        <nav id="bottomNav" class="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t hidden">
-            <div class="flex justify-around py-2">
-                <button class="nav-btn flex flex-col items-center p-3 text-blue-600" data-screen="dashboard">
-                    <i class="fas fa-home text-xl"></i>
-                    <span class="text-xs mt-1">Inicio</span>
-                </button>
-                <button class="nav-btn flex flex-col items-center p-3 text-gray-400" data-screen="expenses">
-                    <i class="fas fa-receipt text-xl"></i>
-                    <span class="text-xs mt-1">Gastos</span>
-                </button>
-                <button class="nav-btn flex flex-col items-center p-3 text-gray-400" data-screen="reports">
-                    <i class="fas fa-chart-line text-xl"></i>
-                    <span class="text-xs mt-1">Reportes</span>
-                </button>
-                <button class="nav-btn flex flex-col items-center p-3 text-gray-400" data-screen="settings">
-                    <i class="fas fa-cog text-xl"></i>
-                    <span class="text-xs mt-1">Config</span>
-                </button>
-            </div>
-        </nav>
-    </div>
-
-    <!-- Create Project Modal -->
-    <div id="createProjectModal" class="modal">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold">Crear Proyecto</h2>
-                <button id="closeProjectModal" class="text-gray-500 hover:text-gray-700">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
+            <div class="text-center mb-8">
+                <i class="fas fa-receipt text-4xl text-blue-600 mb-4"></i>
+                <h1 class="text-2xl font-bold text-gray-800">Iniciar Sesión</h1>
             </div>
             
-            <form id="createProjectForm" class="space-y-4">
+            <form id="loginForm" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Proyecto:</label>
-                    <input type="text" id="projectName" required
-                           class="w-full px-4 py-3 border rounded-lg text-base"
-                           placeholder="Ej: Proyecto Alpha">
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Email:</label>
+                    <input type="email" id="loginEmail" value="maria@empresa.com"
+                           class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500" 
+                           placeholder="usuario@email.com" required>
                 </div>
-                
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Descripción:</label>
-                    <textarea id="projectDescription" rows="3"
-                              class="w-full px-4 py-3 border rounded-lg text-base"
-                              placeholder="Descripción del proyecto"></textarea>
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Contraseña:</label>
+                    <input type="password" id="loginPassword" value="user123"
+                           class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500" 
+                           placeholder="********" required>
                 </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Presupuesto Inicial:</label>
-                    <input type="number" id="projectBudget" step="0.01" min="0" required
-                           class="w-full px-4 py-3 border rounded-lg text-base"
-                           placeholder="0.00">
-                </div>
-                
-                <div class="flex gap-3 pt-4">
-                    <button type="button" id="cancelProjectBtn" 
-                            class="btn-touch flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg">
-                        Cancelar
-                    </button>
-                    <button type="submit" id="saveProjectBtn"
-                            class="btn-touch flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
-                        Crear Proyecto
-                    </button>
-                </div>
+                <button type="submit" class="btn bg-blue-600 hover:bg-blue-700 text-white w-full">
+                    Iniciar Sesión
+                </button>
             </form>
         </div>
     </div>
 
-    <!-- Modal: Selección de Tipo de Comprobante -->
-    <div id="expenseTypeModal" class="modal">
-        <div class="modal-content max-w-md">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold">Tipo de Comprobante</h2>
-                <button id="closeExpenseTypeModal" class="text-gray-500 hover:text-gray-700">
-                    <i class="fas fa-times text-xl"></i>
+    <!-- Dashboard Screen -->
+    <div id="dashboardScreen" class="hidden p-4 space-y-4 pb-20">
+        
+        <!-- Project Selection -->
+        <div class="bg-white rounded-lg shadow p-4">
+            <h2 class="text-lg font-bold text-gray-800 mb-3">Proyecto</h2>
+            <select id="projectSelect" class="w-full px-4 py-3 border rounded-lg">
+                <option value="">Seleccionar proyecto...</option>
+            </select>
+        </div>
+
+        <!-- Quick Actions -->
+        <div id="actionsCard" class="hidden bg-white rounded-lg shadow p-4">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">Acciones</h2>
+            <div class="grid grid-cols-2 gap-3">
+                <button id="addExpenseBtn" class="btn bg-blue-500 hover:bg-blue-600 text-white p-4 text-center">
+                    <i class="fas fa-receipt text-2xl block mb-2"></i>
+                    <span class="text-sm">Registrar Gasto</span>
+                </button>
+                <button id="viewReportsBtn" class="btn bg-purple-500 hover:bg-purple-600 text-white p-4 text-center">
+                    <i class="fas fa-chart-bar text-2xl block mb-2"></i>
+                    <span class="text-sm">Ver Reportes</span>
                 </button>
             </div>
+        </div>
+
+        <!-- Balance -->
+        <div id="balanceCard" class="hidden bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg shadow p-6">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-lg font-bold">Saldo Disponible</h3>
+                <i class="fas fa-wallet text-2xl opacity-70"></i>
+            </div>
+            <div class="text-4xl font-bold" id="currentBalance">$0.00</div>
+            <p class="text-sm opacity-90 mt-2">Presupuesto - Gastos</p>
+        </div>
+
+        <!-- Recent Expenses -->
+        <div id="expensesCard" class="hidden bg-white rounded-lg shadow p-4">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Gastos Recientes</h3>
+            <div id="recentExpenses" class="space-y-3">
+                <p class="text-gray-500 text-center py-4">No hay gastos registrados</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal: Expense Type Selection -->
+    <div id="expenseTypeModal" class="modal">
+        <div class="modal-content p-6 w-full max-w-md">
+            <h2 class="text-xl font-bold mb-6">Tipo de Comprobante</h2>
             
             <div class="space-y-4">
-                <!-- Factura -->
-                <button id="expenseTypeFactura" class="w-full p-4 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg text-left transition-colors">
+                <button id="typeFactura" class="w-full p-4 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg text-left">
                     <div class="flex items-center">
-                        <div class="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center mr-4">
-                            <i class="fas fa-file-invoice text-white text-xl"></i>
-                        </div>
+                        <i class="fas fa-file-invoice text-2xl text-green-600 mr-4"></i>
                         <div>
-                            <h3 class="font-bold text-gray-800">Factura</h3>
-                            <p class="text-sm text-gray-600">Subir XML + PDF</p>
+                            <h3 class="font-bold">Factura</h3>
+                            <p class="text-sm text-gray-600">XML + PDF</p>
                         </div>
                     </div>
                 </button>
 
-                <!-- Ticket -->
-                <button id="expenseTypeTicket" class="w-full p-4 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg text-left transition-colors">
+                <button id="typeTicket" class="w-full p-4 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg text-left">
                     <div class="flex items-center">
-                        <div class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mr-4">
-                            <i class="fas fa-camera text-white text-xl"></i>
-                        </div>
+                        <i class="fas fa-receipt text-2xl text-blue-600 mr-4"></i>
                         <div>
-                            <h3 class="font-bold text-gray-800">Ticket</h3>
-                            <p class="text-sm text-gray-600">Foto + IA automática</p>
+                            <h3 class="font-bold">Ticket/Recibo</h3>
+                            <p class="text-sm text-gray-600">Imagen del ticket</p>
                         </div>
                     </div>
                 </button>
 
-                <!-- Sin Comprobante -->
-                <button id="expenseTypeManual" class="w-full p-4 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg text-left transition-colors">
+                <button id="typeManual" class="w-full p-4 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg text-left">
                     <div class="flex items-center">
-                        <div class="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center mr-4">
-                            <i class="fas fa-edit text-white text-xl"></i>
-                        </div>
+                        <i class="fas fa-edit text-2xl text-orange-600 mr-4"></i>
                         <div>
-                            <h3 class="font-bold text-gray-800">Sin Comprobante</h3>
+                            <h3 class="font-bold">Sin Comprobante</h3>
                             <p class="text-sm text-gray-600">Captura manual</p>
                         </div>
                     </div>
                 </button>
             </div>
+
+            <button id="closeExpenseTypeModal" class="btn bg-gray-300 hover:bg-gray-400 text-gray-700 w-full mt-6">
+                Cancelar
+            </button>
         </div>
     </div>
 
-    <!-- Modal: Factura (XML + PDF) -->
-    <div id="facturaModal" class="modal">
-        <div class="modal-content max-w-lg">
+    <!-- Modal: Expense Form -->
+    <div id="expenseModal" class="modal">
+        <div class="modal-content p-6 w-full max-w-lg">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold">Registrar Factura</h2>
-                <button id="closeFacturaModal" class="text-gray-500 hover:text-gray-700">
+                <h2 class="text-xl font-bold" id="expenseModalTitle">Registrar Gasto</h2>
+                <button id="closeExpenseModal" class="text-gray-500 hover:text-gray-700">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
-            
-            <form id="facturaForm" class="space-y-4">
-                <!-- Archivo XML -->
+
+            <form id="expenseForm" class="space-y-4">
+                <!-- File Upload Section -->
+                <div id="fileSection" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Archivo:</label>
+                    <input type="file" id="fileInput" class="w-full px-3 py-2 border rounded-lg">
+                </div>
+
+                <!-- Date -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Archivo XML <span class="text-red-500">*</span>
-                    </label>
-                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                        <input type="file" id="xmlFile" accept=".xml" class="hidden">
-                        <button type="button" onclick="document.getElementById('xmlFile').click()" 
-                                class="text-blue-600 hover:text-blue-800">
-                            <i class="fas fa-upload text-2xl mb-2"></i>
-                            <p>Seleccionar XML</p>
-                        </button>
-                        <div id="xmlFileName" class="text-sm text-gray-600 mt-2 hidden"></div>
-                    </div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Fecha:</label>
+                    <input type="date" id="expenseDate" 
+                           class="w-full px-4 py-3 border rounded-lg" required>
                 </div>
 
-                <!-- Archivo PDF -->
+                <!-- Amount -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Archivo PDF <span class="text-red-500">*</span>
-                    </label>
-                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                        <input type="file" id="pdfFile" accept=".pdf" class="hidden">
-                        <button type="button" onclick="document.getElementById('pdfFile').click()" 
-                                class="text-blue-600 hover:text-blue-800">
-                            <i class="fas fa-file-pdf text-2xl mb-2"></i>
-                            <p>Seleccionar PDF</p>
-                        </button>
-                        <div id="pdfFileName" class="text-sm text-gray-600 mt-2 hidden"></div>
-                    </div>
-                </div>
-
-                <!-- Categoría -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Categoría:</label>
-                    <select id="facturaCategory" class="w-full px-4 py-3 border rounded-lg text-base" required>
-                        <option value="">Seleccionar categoría...</option>
-                        <option value="Producción">Producción</option>
-                        <option value="Comercial">Comercial</option>
-                        <option value="Administración">Administración</option>
-                    </select>
-                </div>
-
-                <!-- Botones -->
-                <div class="flex gap-3 pt-4">
-                    <button type="button" id="cancelFacturaBtn" 
-                            class="btn-touch flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg">
-                        Cancelar
-                    </button>
-                    <button type="submit" id="saveFacturaBtn"
-                            class="btn-touch flex-1 bg-green-600 hover:bg-green-700 text-white rounded-lg">
-                        Guardar Factura
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal: Ticket (Cámara + IA) -->
-    <div id="ticketModal" class="modal">
-        <div class="modal-content max-w-lg">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold">Registrar Ticket</h2>
-                <button id="closeTicketModal" class="text-gray-500 hover:text-gray-700">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-            
-            <!-- Captura de Foto -->
-            <div id="ticketCameraSection" class="mb-6">
-                <h3 class="text-lg font-medium mb-3">1. Capturar Ticket</h3>
-                
-                <div id="ticketCameraContainer" class="relative bg-gray-100 rounded-lg overflow-hidden mb-4" style="height: 300px;">
-                    <video id="ticketVideo" class="w-full h-full object-cover hidden" autoplay playsinline></video>
-                    <canvas id="ticketCanvas" class="w-full h-full object-cover hidden"></canvas>
-                    
-                    <!-- Placeholder -->
-                    <div id="ticketPlaceholder" class="w-full h-full flex items-center justify-center text-gray-500">
-                        <div class="text-center">
-                            <i class="fas fa-camera text-4xl mb-2"></i>
-                            <p class="text-sm">Presiona "Iniciar Cámara"</p>
-                        </div>
-                    </div>
-                    
-                    <!-- Camera overlay -->
-                    <div class="absolute inset-4 border-2 border-dashed border-blue-400 rounded-lg pointer-events-none"></div>
-                </div>
-
-                <!-- Camera Controls -->
-                <div id="ticketCameraControls" class="grid grid-cols-2 gap-2 mb-4">
-                    <button id="startTicketCamera" class="btn-touch bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
-                        <i class="fas fa-camera mr-2"></i>Usar Cámara
-                    </button>
-                    <button id="uploadTicketPhoto" class="btn-touch bg-green-600 hover:bg-green-700 text-white rounded-lg">
-                        <i class="fas fa-upload mr-2"></i>Subir Foto
-                    </button>
-                </div>
-                
-                <!-- File input hidden -->
-                <input type="file" id="ticketFileInput" accept="image/*" class="hidden">
-
-                <div id="ticketActiveControls" class="hidden grid grid-cols-2 gap-2 mb-4">
-                    <button id="captureTicketPhoto" class="btn-touch bg-green-600 hover:bg-green-700 text-white rounded-lg">
-                        <i class="fas fa-camera-retro mr-2"></i>Capturar
-                    </button>
-                    <button id="switchTicketCamera" class="btn-touch bg-gray-600 hover:bg-gray-700 text-white rounded-lg">
-                        <i class="fas fa-sync-alt mr-2"></i>Cambiar
-                    </button>
-                </div>
-
-                <div id="ticketRetakeControls" class="hidden grid grid-cols-2 gap-2 mb-4">
-                    <button id="retakeTicketPhoto" class="btn-touch bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg">
-                        <i class="fas fa-redo mr-2"></i>Repetir
-                    </button>
-                    <button id="processTicketOCR" class="btn-touch bg-purple-600 hover:bg-purple-700 text-white rounded-lg">
-                        <i class="fas fa-magic mr-2"></i>Analizar con IA
-                    </button>
-                </div>
-            </div>
-
-            <!-- Results Section -->
-            <div id="ticketResultsSection" class="hidden">
-                <h3 class="text-lg font-medium mb-3">2. 🤖 IA Detectó:</h3>
-                
-                <!-- Smart Amount Suggestions -->
-                <div id="ticketAmountSuggestions" class="hidden mb-4 space-y-2">
-                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm font-medium text-blue-800">🤖 IA Sugiere:</span>
-                            <span id="ticketAiConfidence" class="text-xs text-blue-600">95%</span>
-                        </div>
-                        <button type="button" id="ticketSuggestedAmount" 
-                                class="w-full text-left p-2 bg-white border border-blue-300 rounded hover:bg-blue-50 transition-colors">
-                            <span class="text-lg font-bold text-blue-900">$0.00</span>
-                        </button>
-                    </div>
-                    
-                    <!-- Alternativas -->
-                    <div id="ticketAlternativeAmounts" class="hidden">
-                        <div class="text-xs text-gray-600 mb-1">Otras opciones detectadas:</div>
-                        <div id="ticketAlternatives" class="grid grid-cols-2 gap-1"></div>
-                    </div>
-                    
-                    <button type="button" id="showTicketAlternatives" 
-                            class="text-xs text-blue-600 hover:text-blue-800 underline">
-                        Ver más opciones detectadas
-                    </button>
-                </div>
-
-                <form id="ticketForm" class="space-y-4">
-                    <!-- Categoría -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Categoría:</label>
-                        <select id="ticketCategory" class="w-full px-4 py-3 border rounded-lg text-base" required>
-                            <option value="">Seleccionar categoría...</option>
-                            <option value="Producción">Producción</option>
-                            <option value="Comercial">Comercial</option>
-                            <option value="Administración">Administración</option>
-                        </select>
-                    </div>
-
-                    <!-- Monto -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Monto (MXN):</label>
-                        <input type="number" id="ticketAmount" step="0.01" min="0" 
-                               class="w-full px-4 py-3 border rounded-lg text-base" 
-                               placeholder="0.00" required>
-                        <div class="text-xs text-gray-500 mt-1">
-                            💡 Editado automáticamente por IA - puedes corregir
-                        </div>
-                    </div>
-
-                    <!-- Descripción -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Descripción:</label>
-                        <textarea id="ticketDescription" rows="2"
-                                  class="w-full px-4 py-3 border rounded-lg text-base"
-                                  placeholder="Descripción del gasto (opcional)"></textarea>
-                    </div>
-
-                    <!-- Botones -->
-                    <div class="flex gap-3 pt-4">
-                        <button type="button" id="cancelTicketBtn" 
-                                class="btn-touch flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg">
-                            Cancelar
-                        </button>
-                        <button type="submit" id="saveTicketBtn"
-                                class="btn-touch flex-1 bg-green-600 hover:bg-green-700 text-white rounded-lg">
-                            Guardar Ticket
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Sin Comprobante (Manual) -->
-    <div id="manualModal" class="modal">
-        <div class="modal-content max-w-lg">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold">Registro Manual</h2>
-                <button id="closeManualModal" class="text-gray-500 hover:text-gray-700">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-            
-            <form id="manualForm" class="space-y-4">
-                <!-- Fecha -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Fecha <span class="text-red-500">*</span>
-                    </label>
-                    <input type="date" id="manualDate" 
-                           class="w-full px-4 py-3 border rounded-lg text-base" required>
-                </div>
-
-                <!-- Monto -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Monto (MXN) <span class="text-red-500">*</span>
-                    </label>
-                    <input type="number" id="manualAmount" step="0.01" min="0" 
-                           class="w-full px-4 py-3 border rounded-lg text-base" 
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Monto (MXN):</label>
+                    <input type="number" id="expenseAmount" step="0.01" min="0.01" 
+                           class="w-full px-4 py-3 border rounded-lg" 
                            placeholder="0.00" required>
+                    <div id="balanceWarning" class="hidden text-red-500 text-sm mt-1">
+                        ⚠️ Este monto excede el saldo disponible
+                    </div>
                 </div>
 
-                <!-- Concepto -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Concepto <span class="text-red-500">*</span>
-                    </label>
-                    <textarea id="manualConcept" rows="3"
-                              class="w-full px-4 py-3 border rounded-lg text-base"
-                              placeholder="Describe el gasto..." required></textarea>
-                </div>
-
-                <!-- Categoría -->
+                <!-- Category -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Categoría:</label>
-                    <select id="manualCategory" class="w-full px-4 py-3 border rounded-lg text-base" required>
+                    <select id="expenseCategory" class="w-full px-4 py-3 border rounded-lg" required>
                         <option value="">Seleccionar categoría...</option>
                         <option value="Producción">Producción</option>
                         <option value="Comercial">Comercial</option>
@@ -724,14 +191,22 @@
                     </select>
                 </div>
 
-                <!-- Botones -->
+                <!-- Description -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Concepto:</label>
+                    <textarea id="expenseDescription" rows="3"
+                              class="w-full px-4 py-3 border rounded-lg"
+                              placeholder="Descripción del gasto" required></textarea>
+                </div>
+
+                <!-- Buttons -->
                 <div class="flex gap-3 pt-4">
-                    <button type="button" id="cancelManualBtn" 
-                            class="btn-touch flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg">
+                    <button type="button" id="cancelExpenseBtn" 
+                            class="btn bg-gray-300 hover:bg-gray-400 text-gray-700 flex-1">
                         Cancelar
                     </button>
-                    <button type="submit" id="saveManualBtn"
-                            class="btn-touch flex-1 bg-green-600 hover:bg-green-700 text-white rounded-lg">
+                    <button type="submit" id="saveExpenseBtn"
+                            class="btn bg-green-600 hover:bg-green-700 text-white flex-1">
                         Guardar Gasto
                     </button>
                 </div>
@@ -739,239 +214,477 @@
         </div>
     </div>
 
+    <!-- Modal: Reports -->
+    <div id="reportsModal" class="modal">
+        <div class="modal-content p-6 w-full max-w-4xl">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">Mis Reportes</h2>
+                <button id="closeReportsModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Filters -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <select id="reportProject" class="px-4 py-3 border rounded-lg">
+                    <option value="">Todos los proyectos</option>
+                </select>
+                <select id="reportCategory" class="px-4 py-3 border rounded-lg">
+                    <option value="">Todas las categorías</option>
+                    <option value="Producción">Producción</option>
+                    <option value="Comercial">Comercial</option>
+                    <option value="Administración">Administración</option>
+                </select>
+                <button id="generateReport" class="btn bg-blue-600 hover:bg-blue-700 text-white">
+                    Generar Reporte
+                </button>
+            </div>
+
+            <!-- Summary -->
+            <div id="reportSummary" class="hidden bg-gray-50 rounded-lg p-4 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                    <div>
+                        <div class="text-2xl font-bold text-blue-600" id="totalExpenses">$0.00</div>
+                        <div class="text-sm text-gray-600">Total Gastos</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-green-600" id="expenseCount">0</div>
+                        <div class="text-sm text-gray-600">Número de Gastos</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-purple-600" id="avgExpense">$0.00</div>
+                        <div class="text-sm text-gray-600">Promedio</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Expenses List -->
+            <div id="reportData" class="hidden">
+                <h3 class="text-lg font-bold mb-4">Detalle de Gastos</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse border border-gray-300">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border border-gray-300 px-4 py-2 text-left">Fecha</th>
+                                <th class="border border-gray-300 px-4 py-2 text-left">Concepto</th>
+                                <th class="border border-gray-300 px-4 py-2 text-left">Categoría</th>
+                                <th class="border border-gray-300 px-4 py-2 text-right">Monto</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script>
-        // Smart Amount Detection incluido directamente (para evitar problemas de carga en móvil)
-        if (typeof debug === 'undefined') {
-            window.debug = {
-                log: (...args) => console.log('[SmartAmountDetector]', ...args),
-                error: (...args) => console.error('[SmartAmountDetector]', ...args),
-                warn: (...args) => console.warn('[SmartAmountDetector]', ...args)
-            };
-        }
-
-        class SmartAmountDetector {
+        // ==================== DATA MANAGEMENT ====================
+        class DataManager {
             constructor() {
-                this.patterns = {
-                    contextKeywords: [
-                        { words: ['total', 'suma', 'importe'], weight: 10, radius: 80 },
-                        { words: ['subtotal', 'neto'], weight: 8, radius: 60 },
-                        { words: ['pagar', 'cobrar', 'precio'], weight: 7, radius: 50 },
-                        { words: ['cambio', 'devolucion'], weight: -5, radius: 40 },
-                        { words: ['iva', 'impuesto', 'tax'], weight: 3, radius: 30 },
-                        { words: ['descuento', 'ahorro'], weight: 2, radius: 40 }
-                    ],
-                    
-                    amountPatterns: [
-                        /\$\s*([0-9]{1,3}(?:[,]\d{3})*(?:\.\d{2})?)/g,
-                        /([0-9]{1,3}(?:[,]\d{3})*(?:\.\d{2})?)\s*pesos/gi,
-                        /([0-9]{1,3}(?:[,]\d{3})*(?:\.\d{2})?)\s*MXN/gi,
-                        /total\s*:?\s*\$?\s*([0-9]{1,3}(?:[,]\d{3})*(?:\.\d{2})?)/gi,
-                        /suma\s*:?\s*\$?\s*([0-9]{1,3}(?:[,]\d{3})*(?:\.\d{2})?)/gi,
-                        /([0-9]{1,3}(?:[,]\d{3})*\.\d{2})/g
-                    ]
-                };
-                
-                debug.log('SmartAmountDetector initialized');
+                this.initializeData();
             }
 
-            analyzeAmounts(ocrText, ocrConfidence = 0.8) {
-                if (!ocrText || ocrText.trim().length === 0) {
-                    return { suggested: null, alternatives: [], confidence: 0, analysis: 'No hay texto para analizar' };
+            initializeData() {
+                // Initialize demo data if not exists
+                if (!localStorage.getItem('projects')) {
+                    const demoProjects = [
+                        { id: '1', name: 'Proyecto Alpha', budget: 50000, created_at: Date.now() },
+                        { id: '2', name: 'Proyecto Beta', budget: 30000, created_at: Date.now() }
+                    ];
+                    localStorage.setItem('projects', JSON.stringify(demoProjects));
                 }
 
-                debug.log('Starting smart amount analysis');
+                if (!localStorage.getItem('expenses')) {
+                    localStorage.setItem('expenses', JSON.stringify([]));
+                }
+
+                if (!localStorage.getItem('currentUser')) {
+                    const demoUser = { id: '1', email: 'maria@empresa.com', name: 'María González' };
+                    localStorage.setItem('currentUser', JSON.stringify(demoUser));
+                }
+            }
+
+            getProjects() {
+                return JSON.parse(localStorage.getItem('projects') || '[]');
+            }
+
+            getExpenses() {
+                return JSON.parse(localStorage.getItem('expenses') || '[]');
+            }
+
+            addExpense(expense) {
+                const expenses = this.getExpenses();
+                expense.id = Date.now().toString();
+                expense.user_id = this.getCurrentUser().id;
+                expense.created_at = Date.now();
+                expenses.push(expense);
+                localStorage.setItem('expenses', JSON.stringify(expenses));
+                return expense;
+            }
+
+            getCurrentUser() {
+                return JSON.parse(localStorage.getItem('currentUser') || '{}');
+            }
+
+            getProjectBalance(projectId) {
+                const project = this.getProjects().find(p => p.id === projectId);
+                if (!project) return 0;
+
+                const expenses = this.getExpenses()
+                    .filter(e => e.project_id === projectId && e.user_id === this.getCurrentUser().id)
+                    .reduce((sum, e) => sum + (e.amount || 0), 0);
+
+                return project.budget - expenses;
+            }
+
+            getUserExpenses(projectId = null) {
+                const userId = this.getCurrentUser().id;
+                let expenses = this.getExpenses().filter(e => e.user_id === userId);
+                
+                if (projectId) {
+                    expenses = expenses.filter(e => e.project_id === projectId);
+                }
+
+                return expenses.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+            }
+        }
+
+        // ==================== APP CONTROLLER ====================
+        class ExpenseApp {
+            constructor() {
+                this.data = new DataManager();
+                this.currentProject = null;
+                this.currentExpenseType = null;
+                
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.loadProjects();
+                this.showDashboard();
+            }
+
+            setupEventListeners() {
+                // Login
+                document.getElementById('loginForm').addEventListener('submit', (e) => this.handleLogin(e));
+                document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
+
+                // Project selection
+                document.getElementById('projectSelect').addEventListener('change', (e) => this.selectProject(e.target.value));
+
+                // Actions
+                document.getElementById('addExpenseBtn').addEventListener('click', () => this.showExpenseTypeModal());
+                document.getElementById('viewReportsBtn').addEventListener('click', () => this.showReportsModal());
+
+                // Expense type selection
+                document.getElementById('typeFactura').addEventListener('click', () => this.selectExpenseType('factura'));
+                document.getElementById('typeTicket').addEventListener('click', () => this.selectExpenseType('ticket'));
+                document.getElementById('typeManual').addEventListener('click', () => this.selectExpenseType('manual'));
+
+                // Expense form
+                document.getElementById('expenseForm').addEventListener('submit', (e) => this.saveExpense(e));
+                document.getElementById('expenseAmount').addEventListener('input', (e) => this.checkBalance(e.target.value));
+
+                // Modal controls
+                document.getElementById('closeExpenseTypeModal').addEventListener('click', () => this.closeModal('expenseTypeModal'));
+                document.getElementById('closeExpenseModal').addEventListener('click', () => this.closeModal('expenseModal'));
+                document.getElementById('cancelExpenseBtn').addEventListener('click', () => this.closeModal('expenseModal'));
+                document.getElementById('closeReportsModal').addEventListener('click', () => this.closeModal('reportsModal'));
+
+                // Reports
+                document.getElementById('generateReport').addEventListener('click', () => this.generateReport());
+
+                // Set today's date by default
+                document.getElementById('expenseDate').value = new Date().toISOString().split('T')[0];
+            }
+
+            handleLogin(e) {
+                e.preventDefault();
+                // Simple validation - in real app would validate against server
+                const email = document.getElementById('loginEmail').value;
+                if (email) {
+                    this.showDashboard();
+                }
+            }
+
+            logout() {
+                this.showLogin();
+            }
+
+            showLogin() {
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('dashboardScreen').classList.add('hidden');
+                document.querySelector('nav').classList.add('hidden');
+            }
+
+            showDashboard() {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('dashboardScreen').classList.remove('hidden');
+                document.querySelector('nav').classList.remove('hidden');
+                
+                const user = this.data.getCurrentUser();
+                document.getElementById('userInfo').textContent = user.name || user.email;
+            }
+
+            loadProjects() {
+                const projects = this.data.getProjects();
+                const select = document.getElementById('projectSelect');
+                const reportSelect = document.getElementById('reportProject');
+                
+                select.innerHTML = '<option value="">Seleccionar proyecto...</option>';
+                reportSelect.innerHTML = '<option value="">Todos los proyectos</option>';
+                
+                projects.forEach(project => {
+                    const option = document.createElement('option');
+                    option.value = project.id;
+                    option.textContent = project.name;
+                    select.appendChild(option.cloneNode(true));
+                    reportSelect.appendChild(option);
+                });
+            }
+
+            selectProject(projectId) {
+                if (!projectId) {
+                    this.hideProjectCards();
+                    return;
+                }
+
+                const project = this.data.getProjects().find(p => p.id === projectId);
+                if (!project) return;
+
+                this.currentProject = project;
+                this.showProjectCards();
+                this.updateBalance();
+                this.loadRecentExpenses();
+            }
+
+            showProjectCards() {
+                document.getElementById('actionsCard').classList.remove('hidden');
+                document.getElementById('balanceCard').classList.remove('hidden');
+                document.getElementById('expensesCard').classList.remove('hidden');
+            }
+
+            hideProjectCards() {
+                document.getElementById('actionsCard').classList.add('hidden');
+                document.getElementById('balanceCard').classList.add('hidden');
+                document.getElementById('expensesCard').classList.add('hidden');
+            }
+
+            updateBalance() {
+                if (!this.currentProject) return;
+
+                const balance = this.data.getProjectBalance(this.currentProject.id);
+                document.getElementById('currentBalance').textContent = 
+                    `$${balance.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+
+                // Color coding
+                const balanceEl = document.getElementById('currentBalance');
+                if (balance < 0) {
+                    balanceEl.style.color = '#ef4444';
+                } else if (balance < this.currentProject.budget * 0.1) {
+                    balanceEl.style.color = '#f59e0b';
+                } else {
+                    balanceEl.style.color = 'white';
+                }
+            }
+
+            loadRecentExpenses() {
+                if (!this.currentProject) return;
+
+                const expenses = this.data.getUserExpenses(this.currentProject.id).slice(0, 5);
+                const container = document.getElementById('recentExpenses');
+
+                if (expenses.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500 text-center py-4">No hay gastos registrados</p>';
+                    return;
+                }
+
+                container.innerHTML = expenses.map(expense => `
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <div class="flex-1">
+                            <p class="font-medium text-sm">${expense.description || 'Sin descripción'}</p>
+                            <p class="text-xs text-gray-600">${expense.category} • ${new Date(expense.expense_date || expense.created_at).toLocaleDateString('es-MX')}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-red-600">-$${expense.amount.toFixed(2)}</p>
+                            <p class="text-xs text-gray-500">${expense.type || 'manual'}</p>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            showExpenseTypeModal() {
+                if (!this.currentProject) {
+                    alert('Por favor selecciona un proyecto primero');
+                    return;
+                }
+                this.showModal('expenseTypeModal');
+            }
+
+            selectExpenseType(type) {
+                this.currentExpenseType = type;
+                this.closeModal('expenseTypeModal');
+                this.showExpenseModal(type);
+            }
+
+            showExpenseModal(type) {
+                const titles = {
+                    factura: 'Registrar Factura',
+                    ticket: 'Registrar Ticket',
+                    manual: 'Registro Manual'
+                };
+
+                document.getElementById('expenseModalTitle').textContent = titles[type];
+                
+                // Show/hide file section
+                const fileSection = document.getElementById('fileSection');
+                if (type === 'factura' || type === 'ticket') {
+                    fileSection.classList.remove('hidden');
+                    document.getElementById('fileInput').accept = type === 'factura' ? '.xml,.pdf' : 'image/*';
+                } else {
+                    fileSection.classList.add('hidden');
+                }
+
+                // Reset form
+                document.getElementById('expenseForm').reset();
+                document.getElementById('expenseDate').value = new Date().toISOString().split('T')[0];
+                document.getElementById('balanceWarning').classList.add('hidden');
+
+                this.showModal('expenseModal');
+            }
+
+            checkBalance(amount) {
+                if (!this.currentProject || !amount) return;
+
+                const currentBalance = this.data.getProjectBalance(this.currentProject.id);
+                const warningEl = document.getElementById('balanceWarning');
+                
+                if (parseFloat(amount) > currentBalance) {
+                    warningEl.classList.remove('hidden');
+                } else {
+                    warningEl.classList.add('hidden');
+                }
+            }
+
+            saveExpense(e) {
+                e.preventDefault();
+
+                if (!this.currentProject) {
+                    alert('Error: No hay proyecto seleccionado');
+                    return;
+                }
+
+                const formData = {
+                    project_id: this.currentProject.id,
+                    type: this.currentExpenseType,
+                    expense_date: new Date(document.getElementById('expenseDate').value).getTime(),
+                    amount: parseFloat(document.getElementById('expenseAmount').value),
+                    category: document.getElementById('expenseCategory').value,
+                    description: document.getElementById('expenseDescription').value,
+                };
+
+                // Add file info if uploaded
+                const fileInput = document.getElementById('fileInput');
+                if (fileInput.files.length > 0) {
+                    formData.fileName = fileInput.files[0].name;
+                }
 
                 try {
-                    const rawAmounts = this.extractAllAmounts(ocrText);
+                    this.data.addExpense(formData);
                     
-                    if (rawAmounts.length === 0) {
-                        return { suggested: null, alternatives: [], confidence: 0, analysis: 'No se encontraron montos en el texto' };
-                    }
-
-                    const analyzedAmounts = rawAmounts.map(amount => 
-                        this.analyzeAmountContext(amount, ocrText)
-                    );
-
-                    const scoredAmounts = this.calculateScores(analyzedAmounts, ocrText);
-                    const suggested = scoredAmounts[0];
-                    const alternatives = scoredAmounts.slice(1, 5);
-                    const confidence = Math.min(0.95, ocrConfidence * 0.8 + (suggested.totalScore / 30) * 0.2);
+                    this.closeModal('expenseModal');
+                    this.updateBalance();
+                    this.loadRecentExpenses();
                     
-                    debug.log('Smart analysis complete', {
-                        suggested: suggested.value,
-                        confidence: confidence,
-                        totalAmounts: scoredAmounts.length
-                    });
+                    this.showSuccessMessage(`Gasto registrado: $${formData.amount.toFixed(2)}`);
                     
-                    return {
-                        suggested: suggested,
-                        alternatives: alternatives,
-                        confidence: confidence,
-                        analysis: `Monto sugerido: $${suggested.value.toFixed(2)} (Score: ${suggested.totalScore.toFixed(1)})`
-                    };
+                    // Ask if user wants to add another expense
+                    setTimeout(() => {
+                        if (confirm('¿Deseas registrar otro gasto?')) {
+                            this.showExpenseTypeModal();
+                        }
+                    }, 1500);
 
                 } catch (error) {
-                    debug.error('Error in smart amount analysis:', error);
-                    return this.basicAmountFallback(ocrText);
+                    alert('Error al guardar el gasto: ' + error.message);
                 }
             }
 
-            extractAllAmounts(text) {
-                const amounts = [];
-                const seen = new Set();
-                
-                this.patterns.amountPatterns.forEach((pattern, patternIndex) => {
-                    const matches = [...text.matchAll(pattern)];
-                    
-                    matches.forEach(match => {
-                        const cleanAmount = match[1] || match[0];
-                        const numericValue = parseFloat(cleanAmount.replace(/[,$]/g, ''));
-                        
-                        if (numericValue > 0 && numericValue < 999999 && !seen.has(numericValue)) {
-                            amounts.push({
-                                value: numericValue,
-                                originalText: match[0],
-                                cleanText: cleanAmount,
-                                position: match.index,
-                                patternType: patternIndex,
-                                context: this.extractContext(text, match.index, 100)
-                            });
-                            seen.add(numericValue);
-                        }
-                    });
-                });
-                
-                return amounts;
+            showReportsModal() {
+                this.loadProjects(); // Refresh projects in report modal
+                this.showModal('reportsModal');
             }
 
-            analyzeAmountContext(amount, fullText) {
-                let contextScore = 0;
-                let reasoningFactors = [];
-                
-                const context = amount.context.toLowerCase();
-                
-                this.patterns.contextKeywords.forEach(keyword => {
-                    keyword.words.forEach(word => {
-                        if (context.includes(word)) {
-                            contextScore += keyword.weight;
-                            reasoningFactors.push(`Contexto "${word}" (${keyword.weight > 0 ? '+' : ''}${keyword.weight})`);
-                        }
-                    });
-                });
-                
-                return {
-                    ...amount,
-                    contextScore,
-                    reasoningFactors
-                };
-            }
+            generateReport() {
+                const projectId = document.getElementById('reportProject').value;
+                const category = document.getElementById('reportCategory').value;
 
-            calculateScores(amounts, fullText) {
-                return amounts.map(amount => {
-                    let totalScore = amount.contextScore || 0;
-                    
-                    const textLength = fullText.length;
-                    const relativePosition = amount.position / textLength;
-                    if (relativePosition > 0.7) totalScore += 3;
-                    else if (relativePosition > 0.5) totalScore += 1;
-                    
-                    if (amount.originalText.includes('$') || amount.originalText.includes('.')) {
-                        totalScore += 1;
-                    }
-                    
-                    if (amount.value < 10) totalScore -= 2;
-                    if (amount.value > 10000) totalScore -= 1;
-                    
-                    return {
-                        ...amount,
-                        totalScore
-                    };
-                }).sort((a, b) => b.totalScore - a.totalScore);
-            }
+                let expenses = this.data.getUserExpenses(projectId);
 
-            extractContext(text, position, radius) {
-                const start = Math.max(0, position - radius);
-                const end = Math.min(text.length, position + radius);
-                return text.substring(start, end);
-            }
-
-            basicAmountFallback(text) {
-                const amounts = this.extractAllAmounts(text);
-                if (amounts.length === 0) {
-                    return { suggested: null, alternatives: [], confidence: 0, analysis: 'No se encontraron montos' };
+                if (category) {
+                    expenses = expenses.filter(e => e.category === category);
                 }
+
+                // Update summary
+                const total = expenses.reduce((sum, e) => sum + e.amount, 0);
+                const count = expenses.length;
+                const avg = count > 0 ? total / count : 0;
+
+                document.getElementById('totalExpenses').textContent = `$${total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+                document.getElementById('expenseCount').textContent = count.toString();
+                document.getElementById('avgExpense').textContent = `$${avg.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+
+                // Update table
+                const tbody = document.getElementById('reportTableBody');
+                tbody.innerHTML = expenses.map(expense => `
+                    <tr>
+                        <td class="border border-gray-300 px-4 py-2">${new Date(expense.expense_date || expense.created_at).toLocaleDateString('es-MX')}</td>
+                        <td class="border border-gray-300 px-4 py-2">${expense.description}</td>
+                        <td class="border border-gray-300 px-4 py-2">${expense.category}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-right">$${expense.amount.toFixed(2)}</td>
+                    </tr>
+                `).join('');
+
+                // Show results
+                document.getElementById('reportSummary').classList.remove('hidden');
+                document.getElementById('reportData').classList.remove('hidden');
+            }
+
+            showModal(modalId) {
+                document.getElementById(modalId).classList.add('show');
+            }
+
+            closeModal(modalId) {
+                document.getElementById(modalId).classList.remove('show');
+            }
+
+            showSuccessMessage(message) {
+                const notification = document.createElement('div');
+                notification.className = 'fixed top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50';
+                notification.innerHTML = `
+                    <div class="flex items-center">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        <span>${message}</span>
+                    </div>
+                `;
                 
-                const sorted = amounts.sort((a, b) => b.value - a.value);
+                document.body.appendChild(notification);
                 
-                return {
-                    suggested: {
-                        ...sorted[0],
-                        totalScore: 5,
-                        confidence: 0.6,
-                        reasoningFactors: ['Modo básico: Mayor monto encontrado']
-                    },
-                    alternatives: sorted.slice(1, 4),
-                    confidence: 0.6,
-                    analysis: 'Análisis básico: Se sugiere el monto más grande encontrado'
-                };
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
             }
         }
 
-        // Definir función onOpenCvReady antes de cargar OpenCV
-        function onOpenCvReady() {
-            console.log('OpenCV.js loaded successfully');
-            try {
-                if (window.smartScanner) {
-                    window.smartScanner.onOpenCvReady();
-                } else {
-                    console.warn('SmartScanner not yet available, will retry...');
-                    // Reintentar después de que todos los scripts carguen
-                    setTimeout(() => {
-                        if (window.smartScanner) {
-                            window.smartScanner.onOpenCvReady();
-                        } else {
-                            console.warn('SmartScanner still not available after retry');
-                        }
-                    }, 1000);
-                }
-            } catch (error) {
-                console.error('Error initializing OpenCV with SmartScanner:', error);
-            }
-        }
-
-        // Fallback si OpenCV no carga en 10 segundos
-        setTimeout(() => {
-            if (typeof cv === 'undefined') {
-                console.warn('OpenCV failed to load within 10 seconds - app will use fallback mode');
-            }
-        }, 10000);
+        // Initialize app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            window.app = new ExpenseApp();
+        });
     </script>
 
-    <!-- OpenCV.js y Tesseract.js -->
-    <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onOpenCvReady();"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-    <script src="js/debug.js"></script>
-    <script src="js/database.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/projects.js"></script>
-    <script src="js/camera.js"></script>
-    <script src="js/smart-scanner.js"></script>
-    <script src="js/ocr.js"></script>
-    <script src="js/smart-amount-detection.js"></script>
-    <script src="js/expense-types.js"></script>
-    <script src="js/expenses.js"></script>
-    <script src="js/reports.js"></script>
-    <script src="js/app.js"></script>
-
-    
-    <!-- Service Worker Registration -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-                .then(reg => console.log('SW registered', reg))
-                .catch(err => console.log('SW registration failed', err));
-        }
-    </script>
 </body>
 </html>
