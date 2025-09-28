@@ -136,24 +136,9 @@
         <!-- Navigation Bar -->
         <nav id="navbar" class="bg-blue-600 text-white p-4 shadow-lg hidden">
             <div class="flex justify-between items-center">
-                <div class="flex-1">
+                <div>
                     <h1 class="title-responsive font-bold">Gestor de Gastos</h1>
                     <p class="text-blue-200 text-sm" id="userInfo">Bienvenido</p>
-                    <!-- Project Selector in Header -->
-                    <div class="mt-2" id="headerProjectSelector" style="display: none;">
-                        <select id="headerProjectSelect" class="text-sm bg-blue-700 text-white border border-blue-600 rounded px-2 py-1 max-w-48 mb-2">
-                            <option value="">Seleccionar proyecto...</option>
-                        </select>
-                        <!-- Quick Actions in Header -->
-                        <div id="headerQuickActions" class="hidden flex gap-2 mt-1">
-                            <button id="headerAddExpenseBtn" class="text-xs bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded flex items-center">
-                                <i class="fas fa-receipt mr-1"></i>Gasto
-                            </button>
-                            <button id="headerViewReportsBtn" class="text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded flex items-center">
-                                <i class="fas fa-chart-bar mr-1"></i>Reportes
-                            </button>
-                        </div>
-                    </div>
                 </div>
                 <div class="flex items-center gap-4">
                     <span class="text-sm bg-blue-500 px-2 py-1 rounded" id="saldoInfo">Saldo: $0.00</span>
@@ -294,42 +279,67 @@
 
             <!-- Dashboard Screen -->
             <div id="dashboardScreen" class="hidden">
-                <div class="p-4">
-                    <!-- Admin Only: Create Project Button -->
-                    <div id="adminControls" class="hidden bg-white rounded-lg shadow p-6 mb-6">
-                        <h2 class="text-xl font-bold text-gray-800 mb-4">Administración</h2>
-                        <button id="createProjectBtn" class="btn-touch bg-green-600 hover:bg-green-700 text-white rounded-lg w-full">
+                <div class="p-4 space-y-4">
+                    
+                    <!-- Project Selection Card -->
+                    <div class="bg-white rounded-lg shadow-lg p-4">
+                        <h2 class="text-lg font-bold text-gray-800 mb-3">
+                            <i class="fas fa-folder-open mr-2 text-blue-600"></i>Proyecto Activo
+                        </h2>
+                        <select id="headerProjectSelect" class="w-full px-4 py-3 border rounded-lg text-base bg-gray-50">
+                            <option value="">Seleccionar proyecto...</option>
+                        </select>
+                    </div>
+
+                    <!-- Quick Actions Card -->
+                    <div id="quickActionsCard" class="hidden bg-white rounded-lg shadow-lg p-4">
+                        <h2 class="text-lg font-bold text-gray-800 mb-4">
+                            <i class="fas fa-bolt mr-2 text-yellow-500"></i>Acciones Rápidas
+                        </h2>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button id="addExpenseBtn" class="btn-touch bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl p-4 text-center">
+                                <i class="fas fa-receipt text-2xl mb-2 block"></i>
+                                <span class="text-sm font-medium">Registrar Gasto</span>
+                            </button>
+                            <button id="viewReportsBtn" class="btn-touch bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-xl p-4 text-center">
+                                <i class="fas fa-chart-bar text-2xl mb-2 block"></i>
+                                <span class="text-sm font-medium">Ver Reportes</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Current Balance Card -->
+                    <div id="balanceCard" class="hidden bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg shadow-lg p-6">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-lg font-bold">
+                                <i class="fas fa-wallet mr-2"></i>Saldo Actual
+                            </h3>
+                            <i class="fas fa-dollar-sign text-2xl opacity-70"></i>
+                        </div>
+                        <div class="text-4xl font-bold mb-2" id="currentBalance">$0.00</div>
+                        <p class="text-sm opacity-90">Presupuesto + Depósitos - Gastos</p>
+                    </div>
+
+                    <!-- Recent Expenses Card -->
+                    <div id="recentCard" class="hidden bg-white rounded-lg shadow-lg p-4">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">
+                            <i class="fas fa-history mr-2 text-gray-600"></i>Gastos Recientes
+                        </h3>
+                        <div id="recentExpenses" class="space-y-3">
+                            <p class="text-gray-500 text-center py-4">No hay gastos registrados</p>
+                        </div>
+                    </div>
+
+                    <!-- Admin Controls Card -->
+                    <div id="adminControls" class="hidden bg-white rounded-lg shadow-lg p-4">
+                        <h2 class="text-lg font-bold text-gray-800 mb-4">
+                            <i class="fas fa-cog mr-2 text-gray-600"></i>Administración
+                        </h2>
+                        <button id="createProjectBtn" class="btn-touch bg-green-600 hover:bg-green-700 text-white rounded-lg w-full p-3">
                             <i class="fas fa-plus mr-2"></i> Crear Nuevo Proyecto
                         </button>
                     </div>
 
-                    <!-- Project Actions (visible when project selected) -->
-                    <div id="projectActions" class="hidden space-y-4">
-                        <!-- Quick Actions (hidden - now in header) -->
-                        <div class="hidden grid-cols-1 sm:grid-cols-2 gap-4">
-                            <button id="addExpenseBtn" class="btn-touch bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
-                                <i class="fas fa-receipt mr-2"></i> Registrar Gasto
-                            </button>
-                            <button id="viewReportsBtn" class="btn-touch bg-purple-600 hover:bg-purple-700 text-white rounded-lg">
-                                <i class="fas fa-chart-bar mr-2"></i> Ver Reportes
-                            </button>
-                        </div>
-
-                        <!-- Current Balance -->
-                        <div class="bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg p-6">
-                            <h3 class="text-lg font-bold mb-2">Saldo Actual</h3>
-                            <div class="text-3xl font-bold" id="currentBalance">$0.00</div>
-                            <p class="text-sm opacity-90 mt-2">Presupuesto + Depósitos - Gastos</p>
-                        </div>
-
-                        <!-- Recent Expenses -->
-                        <div class="bg-white rounded-lg shadow p-6">
-                            <h3 class="text-lg font-bold text-gray-800 mb-4">Gastos Recientes</h3>
-                            <div id="recentExpenses" class="space-y-3">
-                                <p class="text-gray-500 text-center">No hay gastos registrados</p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </main>
