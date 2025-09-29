@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Gastos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; }
+        .modal.show { display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: white; border-radius: 8px; max-width: 90vw; max-height: 90vh; overflow-y: auto; }
+        .btn { padding: 12px 24px; border-radius: 8px; font-weight: 600; transition: all 0.2s; cursor: pointer; border: none; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Header -->
+    <nav class="bg-blue-600 text-white p-4">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-bold">Gestor de Gastos</h1>
+                <p class="text-sm opacity-90" id="userInfo">Usuario</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="exportBtn" class="btn bg-green-600 hover:bg-green-700 text-white px-2 py-1 text-sm">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button id="logoutBtn" class="btn bg-blue-700 hover:bg-blue-800 text-white px-3 py-2">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
+            <div class="text-center mb-8">
+                <i class="fas fa-receipt text-4xl text-blue-600 mb-4"></i>
+                <h1 class="text-2xl font-bold text-gray-800">Iniciar Sesión</h1>
+            </div>
+            
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Email:</label>
+                    <input type="email" id="loginEmail" value="maria@empresa.com"
+                           class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500" 
+                           placeholder="usuario@email.com" required>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Contraseña:</label>
+                    <input type="password" id="loginPassword" value="user123"
+                           class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500" 
+                           placeholder="********" required>
+                </div>
+                <button type="submit" class="btn bg-blue-600 hover:bg-blue-700 text-white w-full">
+                    Iniciar Sesión
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard Screen -->
+    <div id="dashboardScreen" class="hidden p-4 space-y-4 pb-20">
+        
+        <!-- Project Selection -->
+        <div class="bg-white rounded-lg shadow p-4">
+            <h2 class="text-lg font-bold text-gray-800 mb-3">Proyecto</h2>
+            <select id="projectSelect" class="w-full px-4 py-3 border rounded-lg">
+                <option value="">Seleccionar proyecto...</option>
+            </select>
+        </div>
+
+        <!-- Quick Actions -->
+        <div id="actionsCard" class="hidden bg-white rounded-lg shadow p-4">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">Acciones</h2>
+            <div class="grid grid-cols-2 gap-3">
+                <button id="addExpenseBtn" class="btn bg-blue-500 hover:bg-blue-600 text-white p-4 text-center">
+                    <i class="fas fa-receipt text-2xl block mb-2"></i>
+                    <span class="text-sm">Registrar Gasto</span>
+                </button>
+                <button id="viewReportsBtn" class="btn bg-purple-500 hover:bg-purple-600 text-white p-4 text-center">
+                    <i class="fas fa-chart-bar text-2xl block mb-2"></i>
+                    <span class="text-sm">Ver Reportes</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Balance -->
+        <div id="balanceCard" class="hidden bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg shadow p-6">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-lg font-bold">Saldo Disponible</h3>
+                <i class="fas fa-wallet text-2xl opacity-70"></i>
+            </div>
+            <div class="text-4xl font-bold" id="currentBalance">$0.00</div>
+            <p class="text-sm opacity-90 mt-2">Presupuesto - Gastos</p>
+        </div>
+
+        <!-- Recent Expenses -->
+        <div id="expensesCard" class="hidden bg-white rounded-lg shadow p-4">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Gastos Recientes</h3>
+            <div id="recentExpenses" class="space-y-3">
+                <p class="text-gray-500 text-center py-4">No hay gastos registrados</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal: Expense Type Selection -->
+    <div id="expenseTypeModal" class="modal">
+        <div class="modal-content p-6 w-full max-w-md">
+            <h2 class="text-xl font-bold mb-6">Tipo de Comprobante</h2>
+            
+            <div class="space-y-4">
+                <button id="typeFactura" class="w-full p-4 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg text-left">
+                    <div class="flex items-center">
+                        <i class="fas fa-file-invoice text-2xl text-green-600 mr-4"></i>
+                        <div>
+                            <h3 class="font-bold">Factura</h3>
+                            <p class="text-sm text-gray-600">XML + PDF</p>
+                        </div>
+                    </div>
+                </button>
+
+                <button id="typeTicket" class="w-full p-4 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg text-left">
+                    <div class="flex items-center">
+                        <i class="fas fa-receipt text-2xl text-blue-600 mr-4"></i>
+                        <div>
+                            <h3 class="font-bold">Ticket/Recibo</h3>
+                            <p class="text-sm text-gray-600">Imagen del ticket</p>
+                        </div>
+                    </div>
+                </button>
+
+                <button id="typeManual" class="w-full p-4 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg text-left">
+                    <div class="flex items-center">
+                        <i class="fas fa-edit text-2xl text-orange-600 mr-4"></i>
+                        <div>
+                            <h3 class="font-bold">Sin Comprobante</h3>
+                            <p class="text-sm text-gray-600">Captura manual</p>
+                        </div>
+                    </div>
+                </button>
+            </div>
+
+            <button id="closeExpenseTypeModal" class="btn bg-gray-300 hover:bg-gray-400 text-gray-700 w-full mt-6">
+                Cancelar
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal: Expense Form -->
+    <div id="expenseModal" class="modal">
+        <div class="modal-content p-6 w-full max-w-lg">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold" id="expenseModalTitle">Registrar Gasto</h2>
+                <button id="closeExpenseModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <form id="expenseForm" class="space-y-4">
+                <!-- File Upload Section -->
+                <div id="fileSection" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Archivo:</label>
+                    <input type="file" id="fileInput" class="w-full px-3 py-2 border rounded-lg">
+                    
+                    <!-- Image Preview -->
+                    <div id="imagePreview" class="hidden mt-3">
+                        <img id="previewImg" class="w-full max-w-xs mx-auto rounded-lg border" />
+                        <p class="text-xs text-gray-500 mt-1 text-center">Vista previa del ticket</p>
+                    </div>
+                </div>
+
+                <!-- Factura Files Section -->
+                <div id="facturaFilesSection" class="hidden space-y-4">
+                    <!-- XML File (PRIMERO - para extraer datos) -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            1. Archivo XML <span class="text-red-500">*</span>
+                        </label>
+                        <input type="file" id="xmlFileInput" accept=".xml" 
+                               class="w-full px-3 py-2 border rounded-lg">
+                        <p class="text-xs text-gray-500 mt-1">
+                            📄 El XML contiene los datos que llenarán automáticamente los campos
+                        </p>
+                        <div id="xmlStatus" class="hidden mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-800">
+                            ✅ XML procesado - Campos llenados automáticamente
+                        </div>
+                    </div>
+
+                    <!-- PDF File (SEGUNDO) -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            2. Archivo PDF <span class="text-red-500">*</span>
+                        </label>
+                        <input type="file" id="pdfFileInput" accept=".pdf" 
+                               class="w-full px-3 py-2 border rounded-lg">
+                        <p class="text-xs text-gray-500 mt-1">
+                            📑 Representación visual de la factura
+                        </p>
+                        <div id="pdfStatus" class="hidden mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+                            ✅ PDF cargado correctamente
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Date -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Fecha:</label>
+                    <input type="date" id="expenseDate" 
+                           class="w-full px-4 py-3 border rounded-lg" required>
+                </div>
+
+                <!-- Amount -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Monto (MXN):</label>
+                    <input type="number" id="expenseAmount" step="0.01" min="0.01" 
+                           class="w-full px-4 py-3 border rounded-lg" 
+                           placeholder="0.00" required>
+                    <div id="balanceWarning" class="hidden text-red-500 text-sm mt-1">
+                        ⚠️ Este monto excede el saldo disponible
+                    </div>
+                </div>
+
+                <!-- Category -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Categoría:</label>
+                    <select id="expenseCategory" class="w-full px-4 py-3 border rounded-lg" required>
+                        <option value="">Seleccionar categoría...</option>
+                        <option value="Producción">Producción</option>
+                        <option value="Comercial">Comercial</option>
+                        <option value="Administración">Administración</option>
+                    </select>
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Concepto:</label>
+                    <textarea id="expenseDescription" rows="3"
+                              class="w-full px-4 py-3 border rounded-lg"
+                              placeholder="Descripción del gasto" required></textarea>
+                </div>
+
+                <!-- Buttons -->
+                <div class="flex gap-3 pt-4">
+                    <button type="button" id="cancelExpenseBtn" 
+                            class="btn bg-gray-300 hover:bg-gray-400 text-gray-700 flex-1">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="saveExpenseBtn"
+                            class="btn bg-green-600 hover:bg-green-700 text-white flex-1">
+                        Guardar Gasto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Reports -->
+    <div id="reportsModal" class="modal">
+        <div class="modal-content p-6 w-full max-w-4xl">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">Mis Reportes</h2>
+                <button id="closeReportsModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Filters -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <select id="reportProject" class="px-4 py-3 border rounded-lg">
+                    <option value="">Todos los proyectos</option>
+                </select>
+                <select id="reportCategory" class="px-4 py-3 border rounded-lg">
+                    <option value="">Todas las categorías</option>
+                    <option value="Producción">Producción</option>
+                    <option value="Comercial">Comercial</option>
+                    <option value="Administración">Administración</option>
+                </select>
+                <button id="generateReport" class="btn bg-blue-600 hover:bg-blue-700 text-white">
+                    Generar Reporte
+                </button>
+            </div>
+
+            <!-- Summary -->
+            <div id="reportSummary" class="hidden bg-gray-50 rounded-lg p-4 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                    <div>
+                        <div class="text-2xl font-bold text-blue-600" id="totalExpenses">$0.00</div>
+                        <div class="text-sm text-gray-600">Total Gastos</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-green-600" id="expenseCount">0</div>
+                        <div class="text-sm text-gray-600">Número de Gastos</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-purple-600" id="avgExpense">$0.00</div>
+                        <div class="text-sm text-gray-600">Promedio</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Expenses List -->
+            <div id="reportData" class="hidden">
+                <h3 class="text-lg font-bold mb-4">Detalle de Gastos</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse border border-gray-300">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border border-gray-300 px-4 py-2 text-left">Fecha</th>
+                                <th class="border border-gray-300 px-4 py-2 text-left">Concepto</th>
+                                <th class="border border-gray-300 px-4 py-2 text-left">Categoría</th>
+                                <th class="border border-gray-300 px-4 py-2 text-right">Monto</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // ==================== DATA MANAGEMENT ====================
+        class DataManager {
+            constructor() {
+                this.initializeData();
+            }
+
+            initializeData() {
+                // Initialize demo data if not exists
+                if (!localStorage.getItem('projects')) {
+                    const demoProjects = [
+                        { id: '1', name: 'Proyecto Alpha', budget: 50000, created_at: Date.now() },
+                        { id: '2', name: 'Proyecto Beta', budget: 30000, created_at: Date.now() }
+                    ];
+                    localStorage.setItem('projects', JSON.stringify(demoProjects));
+                }
+
+                if (!localStorage.getItem('expenses')) {
+                    localStorage.setItem('expenses', JSON.stringify([]));
+                }
+
+                if (!localStorage.getItem('currentUser')) {
+                    const demoUser = { id: '1', email: 'maria@empresa.com', name: 'María González' };
+                    localStorage.setItem('currentUser', JSON.stringify(demoUser));
+                }
+            }
+
+            getProjects() {
+                return JSON.parse(localStorage.getItem('projects') || '[]');
+            }
+
+            getExpenses() {
+                return JSON.parse(localStorage.getItem('expenses') || '[]');
+            }
+
+            addExpense(expense) {
+                const expenses = this.getExpenses();
+                expense.id = Date.now().toString();
+                expense.user_id = this.getCurrentUser().id;
+                expense.created_at = Date.now();
+                expenses.push(expense);
+                localStorage.setItem('expenses', JSON.stringify(expenses));
+                return expense;
+            }
+
+            // Export data for download
+            exportData() {
+                const data = {
+                    projects: this.getProjects(),
+                    expenses: this.getExpenses(),
+                    exported_at: new Date().toISOString(),
+                    user: this.getCurrentUser()
+                };
+                return data;
+            }
+
+            // Reset data (for month end)
+            resetData() {
+                localStorage.removeItem('expenses');
+                this.initializeData();
+            }
+
+            getCurrentUser() {
+                return JSON.parse(localStorage.getItem('currentUser') || '{}');
+            }
+
+            getProjectBalance(projectId) {
+                const project = this.getProjects().find(p => p.id === projectId);
+                if (!project) return 0;
+
+                const expenses = this.getExpenses()
+                    .filter(e => e.project_id === projectId && e.user_id === this.getCurrentUser().id)
+                    .reduce((sum, e) => sum + (e.amount || 0), 0);
+
+                return project.budget - expenses;
+            }
+
+            getUserExpenses(projectId = null) {
+                const userId = this.getCurrentUser().id;
+                let expenses = this.getExpenses().filter(e => e.user_id === userId);
+                
+                if (projectId) {
+                    expenses = expenses.filter(e => e.project_id === projectId);
+                }
+
+                return expenses.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+            }
+        }
+
+        // ==================== APP CONTROLLER ====================
+        class ExpenseApp {
+            constructor() {
+                this.data = new DataManager();
+                this.currentProject = null;
+                this.currentExpenseType = null;
+                this.currentXMLData = null;
+                this.currentPDFData = null;
+                
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.loadProjects();
+                this.showDashboard();
+            }
+
+            setupEventListeners() {
+                // Login
+                document.getElementById('loginForm').addEventListener('submit', (e) => this.handleLogin(e));
+                document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
+                document.getElementById('exportBtn').addEventListener('click', () => this.exportData());
+
+                // Project selection
+                document.getElementById('projectSelect').addEventListener('change', (e) => this.selectProject(e.target.value));
+
+                // Actions
+                document.getElementById('addExpenseBtn').addEventListener('click', () => this.showExpenseTypeModal());
+                document.getElementById('viewReportsBtn').addEventListener('click', () => this.showReportsModal());
+
+                // Expense type selection
+                document.getElementById('typeFactura').addEventListener('click', () => this.selectExpenseType('factura'));
+                document.getElementById('typeTicket').addEventListener('click', () => this.selectExpenseType('ticket'));
+                document.getElementById('typeManual').addEventListener('click', () => this.selectExpenseType('manual'));
+
+                // Expense form
+                document.getElementById('expenseForm').addEventListener('submit', (e) => this.saveExpense(e));
+                document.getElementById('expenseAmount').addEventListener('input', (e) => this.checkBalance(e.target.value));
+                document.getElementById('fileInput').addEventListener('change', (e) => this.handleFileUpload(e));
+                
+                // Factura files
+                document.getElementById('xmlFileInput').addEventListener('change', (e) => this.handleXMLFile(e));
+                document.getElementById('pdfFileInput').addEventListener('change', (e) => this.handlePDFFile(e));
+
+                // Modal controls
+                document.getElementById('closeExpenseTypeModal').addEventListener('click', () => this.closeModal('expenseTypeModal'));
+                document.getElementById('closeExpenseModal').addEventListener('click', () => this.closeModal('expenseModal'));
+                document.getElementById('cancelExpenseBtn').addEventListener('click', () => this.closeModal('expenseModal'));
+                document.getElementById('closeReportsModal').addEventListener('click', () => this.closeModal('reportsModal'));
+
+                // Reports
+                document.getElementById('generateReport').addEventListener('click', () => this.generateReport());
+
+                // Set today's date by default
+                document.getElementById('expenseDate').value = new Date().toISOString().split('T')[0];
+            }
+
+            handleLogin(e) {
+                e.preventDefault();
+                // Simple validation - in real app would validate against server
+                const email = document.getElementById('loginEmail').value;
+                if (email) {
+                    this.showDashboard();
+                }
+            }
+
+            logout() {
+                this.showLogin();
+            }
+
+            showLogin() {
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('dashboardScreen').classList.add('hidden');
+                document.querySelector('nav').classList.add('hidden');
+            }
+
+            showDashboard() {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('dashboardScreen').classList.remove('hidden');
+                document.querySelector('nav').classList.remove('hidden');
+                
+                const user = this.data.getCurrentUser();
+                document.getElementById('userInfo').textContent = user.name || user.email;
+            }
+
+            loadProjects() {
+                const projects = this.data.getProjects();
+                const select = document.getElementById('projectSelect');
+                const reportSelect = document.getElementById('reportProject');
+                
+                select.innerHTML = '<option value="">Seleccionar proyecto...</option>';
+                reportSelect.innerHTML = '<option value="">Todos los proyectos</option>';
+                
+                projects.forEach(project => {
+                    const option = document.createElement('option');
+                    option.value = project.id;
+                    option.textContent = project.name;
+                    select.appendChild(option.cloneNode(true));
+                    reportSelect.appendChild(option);
+                });
+            }
+
+            selectProject(projectId) {
+                if (!projectId) {
+                    this.hideProjectCards();
+                    return;
+                }
+
+                const project = this.data.getProjects().find(p => p.id === projectId);
+                if (!project) return;
+
+                this.currentProject = project;
+                this.showProjectCards();
+                this.updateBalance();
+                this.loadRecentExpenses();
+            }
+
+            showProjectCards() {
+                document.getElementById('actionsCard').classList.remove('hidden');
+                document.getElementById('balanceCard').classList.remove('hidden');
+                document.getElementById('expensesCard').classList.remove('hidden');
+            }
+
+            hideProjectCards() {
+                document.getElementById('actionsCard').classList.add('hidden');
+                document.getElementById('balanceCard').classList.add('hidden');
+                document.getElementById('expensesCard').classList.add('hidden');
+            }
+
+            updateBalance() {
+                if (!this.currentProject) return;
+
+                const balance = this.data.getProjectBalance(this.currentProject.id);
+                document.getElementById('currentBalance').textContent = 
+                    `$${balance.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+                // Color coding
+                const balanceEl = document.getElementById('currentBalance');
+                if (balance < 0) {
+                    balanceEl.style.color = '#ef4444';
+                } else if (balance < this.currentProject.budget * 0.1) {
+                    balanceEl.style.color = '#f59e0b';
+                } else {
+                    balanceEl.style.color = 'white';
+                }
+            }
+
+            handleFileUpload(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // Show preview for images
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        document.getElementById('previewImg').src = event.target.result;
+                        document.getElementById('imagePreview').classList.remove('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    document.getElementById('imagePreview').classList.add('hidden');
+                }
+            }
+
+            handleXMLFile(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const xmlText = event.target.result;
+                        const parser = new DOMParser();
+                        const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+
+                        // Verificar si hay errores en el XML
+                        if (xmlDoc.querySelector('parsererror')) {
+                            throw new Error('XML no válido');
+                        }
+
+                        // Extraer datos del XML (CFDI 3.3 o 4.0)
+                        const comprobante = xmlDoc.querySelector('cfdi\\:Comprobante, Comprobante');
+                        if (!comprobante) {
+                            throw new Error('No se encontró el comprobante en el XML');
+                        }
+
+                        // Extraer fecha (formato: 2024-01-15T10:30:00)
+                        const fechaTimbrado = comprobante.getAttribute('Fecha');
+                        if (fechaTimbrado) {
+                            const fecha = fechaTimbrado.split('T')[0]; // Solo la fecha, sin hora
+                            document.getElementById('expenseDate').value = fecha;
+                        }
+
+                        // Extraer monto total
+                        const total = comprobante.getAttribute('Total');
+                        if (total) {
+                            document.getElementById('expenseAmount').value = parseFloat(total);
+                        }
+
+                        // Extraer concepto/descripción del primer concepto
+                        const concepto = xmlDoc.querySelector('cfdi\\:Concepto, Concepto');
+                        if (concepto) {
+                            const descripcion = concepto.getAttribute('Descripcion') || 
+                                               concepto.getAttribute('description') ||
+                                               'Factura CFDI';
+                            document.getElementById('expenseDescription').value = descripcion.substring(0, 100); // Límite de caracteres
+                        }
+
+                        // Guardar el XML en base64 para almacenamiento
+                        this.currentXMLData = event.target.result;
+
+                        // Mostrar estado de éxito
+                        document.getElementById('xmlStatus').classList.remove('hidden');
+                        
+                        // Actualizar validación del balance
+                        const amount = document.getElementById('expenseAmount').value;
+                        if (amount) {
+                            this.checkBalance(amount);
+                        }
+
+                        console.log('✅ XML procesado exitosamente');
+
+                    } catch (error) {
+                        console.error('Error procesando XML:', error);
+                        alert('Error al procesar el archivo XML: ' + error.message);
+                        
+                        // Limpiar el input si hay error
+                        e.target.value = '';
+                        document.getElementById('xmlStatus').classList.add('hidden');
+                    }
+                };
+
+                reader.readAsText(file);
+            }
+
+            handlePDFFile(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                if (file.type !== 'application/pdf') {
+                    alert('Por favor selecciona un archivo PDF válido');
+                    e.target.value = '';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        // Guardar el PDF en base64 para almacenamiento
+                        this.currentPDFData = event.target.result;
+
+                        // Mostrar estado de éxito
+                        document.getElementById('pdfStatus').classList.remove('hidden');
+
+                        console.log('✅ PDF cargado exitosamente');
+
+                    } catch (error) {
+                        console.error('Error procesando PDF:', error);
+                        alert('Error al procesar el archivo PDF: ' + error.message);
+                        
+                        // Limpiar el input si hay error
+                        e.target.value = '';
+                        document.getElementById('pdfStatus').classList.add('hidden');
+                    }
+                };
+
+                reader.readAsDataURL(file);
+            }
+
+            loadRecentExpenses() {
+                if (!this.currentProject) return;
+
+                const expenses = this.data.getUserExpenses(this.currentProject.id).slice(0, 5);
+                const container = document.getElementById('recentExpenses');
+
+                if (expenses.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500 text-center py-4">No hay gastos registrados</p>';
+                    return;
+                }
+
+                container.innerHTML = expenses.map(expense => `
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <div class="flex-1">
+                            <p class="font-medium text-sm">${expense.description || 'Sin descripción'}</p>
+                            <p class="text-xs text-gray-600">${expense.category} • ${new Date(expense.expense_date || expense.created_at).toLocaleDateString('es-MX')}</p>
+                            <div class="flex gap-1 mt-1">
+                                ${expense.imageData ? '<i class="fas fa-image text-xs text-blue-500" title="Con imagen"></i>' : ''}
+                                ${expense.xmlData ? '<i class="fas fa-file-code text-xs text-green-500" title="Con XML"></i>' : ''}
+                                ${expense.pdfData ? '<i class="fas fa-file-pdf text-xs text-red-500" title="Con PDF"></i>' : ''}
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-red-600">-$${expense.amount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            <p class="text-xs text-gray-500">${expense.type || 'manual'}</p>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            showExpenseTypeModal() {
+                if (!this.currentProject) {
+                    alert('Por favor selecciona un proyecto primero');
+                    return;
+                }
+                this.showModal('expenseTypeModal');
+            }
+
+            selectExpenseType(type) {
+                this.currentExpenseType = type;
+                this.closeModal('expenseTypeModal');
+                this.showExpenseModal(type);
+            }
+
+            showExpenseModal(type) {
+                const titles = {
+                    factura: 'Registrar Factura',
+                    ticket: 'Registrar Ticket',
+                    manual: 'Registro Manual'
+                };
+
+                document.getElementById('expenseModalTitle').textContent = titles[type];
+                
+                // Show/hide appropriate file sections
+                const fileSection = document.getElementById('fileSection');
+                const facturaFilesSection = document.getElementById('facturaFilesSection');
+                
+                if (type === 'factura') {
+                    fileSection.classList.add('hidden');
+                    facturaFilesSection.classList.remove('hidden');
+                } else if (type === 'ticket') {
+                    fileSection.classList.remove('hidden');
+                    facturaFilesSection.classList.add('hidden');
+                    document.getElementById('fileInput').accept = 'image/*';
+                } else {
+                    fileSection.classList.add('hidden');
+                    facturaFilesSection.classList.add('hidden');
+                }
+
+                // Reset form
+                document.getElementById('expenseForm').reset();
+                document.getElementById('expenseDate').value = new Date().toISOString().split('T')[0];
+                document.getElementById('balanceWarning').classList.add('hidden');
+                document.getElementById('imagePreview').classList.add('hidden');
+                document.getElementById('xmlStatus').classList.add('hidden');
+                document.getElementById('pdfStatus').classList.add('hidden');
+
+                this.showModal('expenseModal');
+            }
+
+            checkBalance(amount) {
+                if (!this.currentProject || !amount) return;
+
+                const currentBalance = this.data.getProjectBalance(this.currentProject.id);
+                const warningEl = document.getElementById('balanceWarning');
+                
+                if (parseFloat(amount) > currentBalance) {
+                    warningEl.classList.remove('hidden');
+                } else {
+                    warningEl.classList.add('hidden');
+                }
+            }
+
+            saveExpense(e) {
+                e.preventDefault();
+
+                if (!this.currentProject) {
+                    alert('Error: No hay proyecto seleccionado');
+                    return;
+                }
+
+                const formData = {
+                    project_id: this.currentProject.id,
+                    type: this.currentExpenseType,
+                    expense_date: new Date(document.getElementById('expenseDate').value).getTime(),
+                    amount: parseFloat(document.getElementById('expenseAmount').value),
+                    category: document.getElementById('expenseCategory').value,
+                    description: document.getElementById('expenseDescription').value,
+                };
+
+                // Handle different file types
+                if (this.currentExpenseType === 'factura') {
+                    // Para facturas: XML y PDF
+                    if (this.currentXMLData && this.currentPDFData) {
+                        formData.xmlData = this.currentXMLData;
+                        formData.pdfData = this.currentPDFData;
+                        
+                        // Nombres de archivos
+                        const xmlInput = document.getElementById('xmlFileInput');
+                        const pdfInput = document.getElementById('pdfFileInput');
+                        if (xmlInput.files[0]) formData.xmlFileName = xmlInput.files[0].name;
+                        if (pdfInput.files[0]) formData.pdfFileName = pdfInput.files[0].name;
+                    } else {
+                        alert('Por favor selecciona tanto el archivo XML como el PDF para la factura');
+                        return;
+                    }
+                } else {
+                    // Para tickets y manual: archivo de imagen opcional
+                    const fileInput = document.getElementById('fileInput');
+                    if (fileInput.files.length > 0) {
+                        const file = fileInput.files[0];
+                        formData.fileName = file.name;
+                        formData.fileSize = file.size;
+                        
+                        if (file.type.startsWith('image/')) {
+                            // Save image as base64
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                                formData.imageData = event.target.result;
+                                this.completeExpenseSave(formData);
+                            };
+                            reader.readAsDataURL(file);
+                            return; // Wait for file read to complete
+                        }
+                    }
+                }
+
+                this.completeExpenseSave(formData);
+            }
+
+            completeExpenseSave(formData) {
+                try {
+                    this.data.addExpense(formData);
+                    
+                    this.closeModal('expenseModal');
+                    this.updateBalance();
+                    this.loadRecentExpenses();
+                    
+                    const amountFormatted = formData.amount.toLocaleString('es-MX', { 
+                        minimumFractionDigits: 2, 
+                        maximumFractionDigits: 2 
+                    });
+                    this.showSuccessMessage(`Gasto registrado: $${amountFormatted}`);
+                    
+                    // Ask if user wants to add another expense
+                    setTimeout(() => {
+                        this.showCustomConfirm(
+                            '¿Deseas registrar otro gasto?',
+                            () => {
+                                // SÍ - Otro gasto
+                                this.showExpenseTypeModal();
+                            },
+                            () => {
+                                // NO - Cerrar sesión automáticamente
+                                this.showSuccessMessage('Cerrando sesión automáticamente...');
+                                setTimeout(() => {
+                                    this.logout();
+                                }, 2000);
+                            }
+                        );
+                    }, 1500);
+
+                } catch (error) {
+                    alert('Error al guardar el gasto: ' + error.message);
+                }
+            }
+
+            showReportsModal() {
+                this.loadProjects(); // Refresh projects in report modal
+                this.showModal('reportsModal');
+            }
+
+            generateReport() {
+                const projectId = document.getElementById('reportProject').value;
+                const category = document.getElementById('reportCategory').value;
+
+                let expenses = this.data.getUserExpenses(projectId);
+
+                if (category) {
+                    expenses = expenses.filter(e => e.category === category);
+                }
+
+                // Update summary
+                const total = expenses.reduce((sum, e) => sum + e.amount, 0);
+                const count = expenses.length;
+                const avg = count > 0 ? total / count : 0;
+
+                document.getElementById('totalExpenses').textContent = `$${total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+                document.getElementById('expenseCount').textContent = count.toString();
+                document.getElementById('avgExpense').textContent = `$${avg.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+
+                // Update table
+                const tbody = document.getElementById('reportTableBody');
+                tbody.innerHTML = expenses.map(expense => `
+                    <tr>
+                        <td class="border border-gray-300 px-4 py-2">${new Date(expense.expense_date || expense.created_at).toLocaleDateString('es-MX')}</td>
+                        <td class="border border-gray-300 px-4 py-2">
+                            ${expense.description}
+                            ${expense.imageData ? ' <i class="fas fa-image text-blue-500 ml-1" title="Con imagen adjunta"></i>' : ''}
+                            ${expense.xmlData ? ' <i class="fas fa-file-code text-green-500 ml-1" title="Con archivo XML"></i>' : ''}
+                            ${expense.pdfData ? ' <i class="fas fa-file-pdf text-red-500 ml-1" title="Con archivo PDF"></i>' : ''}
+                        </td>
+                        <td class="border border-gray-300 px-4 py-2">${expense.category}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-right">$${expense.amount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    </tr>
+                `).join('');
+
+                // Show results
+                document.getElementById('reportSummary').classList.remove('hidden');
+                document.getElementById('reportData').classList.remove('hidden');
+            }
+
+            showModal(modalId) {
+                document.getElementById(modalId).classList.add('show');
+            }
+
+            closeModal(modalId) {
+                document.getElementById(modalId).classList.remove('show');
+                
+                // Limpiar datos temporales cuando se cierre el modal de gastos
+                if (modalId === 'expenseModal') {
+                    this.currentXMLData = null;
+                    this.currentPDFData = null;
+                    
+                    // Limpiar estados visuales
+                    document.getElementById('xmlStatus').classList.add('hidden');
+                    document.getElementById('pdfStatus').classList.add('hidden');
+                    document.getElementById('imagePreview').classList.add('hidden');
+                    
+                    // Limpiar formulario
+                    document.getElementById('expenseForm').reset();
+                    
+                    // Limpiar inputs de archivo
+                    document.getElementById('fileInput').value = '';
+                    document.getElementById('xmlFileInput').value = '';
+                    document.getElementById('pdfFileInput').value = '';
+                }
+            }
+
+            exportData() {
+                try {
+                    // Generar fecha para nombres de archivos
+                    const now = new Date();
+                    const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+                                       'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                    const folderName = `Gastos_${monthNames[now.getMonth()]}${now.getFullYear().toString().slice(-2)}`;
+                    
+                    // Obtener gastos del usuario actual
+                    const userId = this.data.getCurrentUser().id;
+                    const allExpenses = [];
+                    
+                    // Obtener todos los proyectos y gastos del usuario
+                    const projects = this.data.getProjects();
+                    const userExpenses = this.data.getUserExpenses(); // Sin filtro de proyecto = todos los gastos del usuario
+                    
+                    // Agregar nombre del proyecto a cada gasto
+                    userExpenses.forEach(expense => {
+                        const project = projects.find(p => p.id === expense.project_id);
+                        expense.projectName = project ? project.name : 'Proyecto Desconocido';
+                        allExpenses.push(expense);
+                    });
+
+                    if (allExpenses.length === 0) {
+                        alert('No hay gastos para exportar');
+                        return;
+                    }
+
+                    // Generar números de registro únicos
+                    const csvData = [];
+                    const filesToDownload = [];
+                    
+                    allExpenses.forEach((expense, index) => {
+                        // Número de registro: USR001_PRJ001_REG001 (ejemplo)
+                        const userNum = userId.slice(-3).padStart(3, '0');
+                        const projectNum = expense.project_id.slice(-3).padStart(3, '0');
+                        const regNum = (index + 1).toString().padStart(3, '0');
+                        const registrationNumber = `USR${userNum}_PRJ${projectNum}_REG${regNum}`;
+                        
+                        // Preparar fila CSV
+                        const csvRow = {
+                            'Num_Registro': registrationNumber,
+                            'Fecha': new Date(expense.expense_date || expense.created_at).toLocaleDateString('es-MX'),
+                            'Proyecto': expense.projectName,
+                            'Descripcion': expense.description || 'Sin descripción',
+                            'Categoria': expense.category,
+                            'Monto': expense.amount,
+                            'Tipo': expense.type || 'manual',
+                            'Archivos_Adjuntos': ''
+                        };
+
+                        // Manejar archivos según el tipo de gasto
+                        const attachedFiles = [];
+                        
+                        if (expense.type === 'factura' && expense.xmlData && expense.pdfData) {
+                            // Para facturas: usar el mismo nombre base para XML y PDF
+                            const baseFileName = expense.xmlFileName ? 
+                                expense.xmlFileName.replace('.xml', '') : 
+                                `factura_${registrationNumber}`;
+                            
+                            attachedFiles.push(`${baseFileName}.xml`);
+                            attachedFiles.push(`${baseFileName}.pdf`);
+                            
+                            // Agregar archivos a la lista de descarga
+                            filesToDownload.push({
+                                name: `${baseFileName}.xml`,
+                                data: expense.xmlData,
+                                type: 'text/xml'
+                            });
+                            filesToDownload.push({
+                                name: `${baseFileName}.pdf`,
+                                data: expense.pdfData,
+                                type: 'application/pdf'
+                            });
+                            
+                        } else if (expense.imageData) {
+                            // Para tickets: renombrar con número de registro
+                            const extension = expense.fileName ? 
+                                expense.fileName.split('.').pop() : 'jpg';
+                            const fileName = `${registrationNumber}.${extension}`;
+                            
+                            attachedFiles.push(fileName);
+                            
+                            // Agregar imagen a la lista de descarga
+                            filesToDownload.push({
+                                name: fileName,
+                                data: expense.imageData,
+                                type: `image/${extension}`
+                            });
+                        }
+                        
+                        csvRow['Archivos_Adjuntos'] = attachedFiles.join('; ');
+                        csvData.push(csvRow);
+                    });
+
+                    // Generar CSV
+                    const csvContent = this.generateCSV(csvData);
+                    
+                    // Descargar CSV
+                    const csvBlob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const csvLink = document.createElement('a');
+                    csvLink.href = URL.createObjectURL(csvBlob);
+                    csvLink.download = `${folderName}_Gastos.csv`;
+                    csvLink.click();
+                    
+                    // Descargar archivos individualmente
+                    setTimeout(() => {
+                        this.downloadFiles(filesToDownload, folderName);
+                    }, 500);
+                    
+                    // Ask about month-end reset
+                    setTimeout(() => {
+                        this.showCustomConfirm(
+                            '¿Es cierre de mes? ¿Deseas reiniciar los datos para el nuevo mes?',
+                            () => {
+                                this.showCustomConfirm(
+                                    '⚠️ ATENCIÓN: Esto borrará todos los gastos registrados. Los datos ya están descargados. ¿Continuar?',
+                                    () => {
+                                        this.data.resetData();
+                                        this.loadRecentExpenses();
+                                        this.updateBalance();
+                                        this.showSuccessMessage('Datos reiniciados para nuevo mes');
+                                    },
+                                    () => {
+                                        this.showSuccessMessage('Datos conservados');
+                                    }
+                                );
+                            },
+                            () => {
+                                this.showSuccessMessage('Descarga completada');
+                            }
+                        );
+                    }, 2000);
+                    
+                } catch (error) {
+                    alert('Error al exportar datos: ' + error.message);
+                }
+            }
+
+            generateCSV(data) {
+                if (data.length === 0) return '';
+                
+                // Obtener headers
+                const headers = Object.keys(data[0]);
+                
+                // Crear contenido CSV
+                let csvContent = headers.join(',') + '\n';
+                
+                data.forEach(row => {
+                    const values = headers.map(header => {
+                        const value = row[header];
+                        // Escapar comillas y envolver en comillas si contiene comas
+                        if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+                            return `"${value.replace(/"/g, '""')}"`;
+                        }
+                        return value;
+                    });
+                    csvContent += values.join(',') + '\n';
+                });
+                
+                return csvContent;
+            }
+
+            downloadFiles(files, folderName) {
+                if (files.length === 0) return;
+                
+                this.showSuccessMessage(`Descargando ${files.length} archivos...`);
+                
+                files.forEach((file, index) => {
+                    setTimeout(() => {
+                        // Crear link de descarga para cada archivo
+                        const link = document.createElement('a');
+                        link.href = file.data;
+                        link.download = file.name;
+                        link.click();
+                    }, index * 300); // Retraso de 300ms entre descargas para evitar bloqueos
+                });
+                
+                setTimeout(() => {
+                    alert(`📁 Descarga completada!\n\n` +
+                          `✅ CSV: ${folderName}_Gastos.csv\n` +
+                          `✅ ${files.length} archivos adjuntos\n\n` +
+                          `💡 Organiza todos los archivos en una carpeta llamada "${folderName}"`);
+                }, files.length * 300 + 1000);
+            }
+
+            showCustomConfirm(message, onYes, onNo) {
+                // Crear modal personalizado con botones SÍ/NO
+                const modal = document.createElement('div');
+                modal.className = 'modal show';
+                modal.innerHTML = `
+                    <div class="modal-content p-6 w-full max-w-sm">
+                        <div class="text-center mb-6">
+                            <i class="fas fa-question-circle text-4xl text-blue-500 mb-4"></i>
+                            <h3 class="text-lg font-bold text-gray-800 mb-2">${message}</h3>
+                        </div>
+                        <div class="flex gap-3">
+                            <button id="confirmYes" class="btn bg-green-500 hover:bg-green-600 text-white flex-1">
+                                <i class="fas fa-check mr-2"></i>SÍ
+                            </button>
+                            <button id="confirmNo" class="btn bg-red-500 hover:bg-red-600 text-white flex-1">
+                                <i class="fas fa-times mr-2"></i>NO
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(modal);
+
+                // Eventos de botones
+                modal.querySelector('#confirmYes').addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                    onYes();
+                });
+
+                modal.querySelector('#confirmNo').addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                    onNo();
+                });
+
+                // Cerrar con clic fuera del modal
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        document.body.removeChild(modal);
+                        onNo(); // Por defecto NO si se cierra
+                    }
+                });
+            }
+
+            showSuccessMessage(message) {
+                const notification = document.createElement('div');
+                notification.className = 'fixed top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50';
+                notification.innerHTML = `
+                    <div class="flex items-center">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        <span>${message}</span>
+                    </div>
+                `;
+                
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
+            }
+        }
+
+        // Initialize app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            window.app = new ExpenseApp();
+        });
+    </script>
+
+</body>
+</html>
