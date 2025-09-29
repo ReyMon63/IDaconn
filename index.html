@@ -944,30 +944,187 @@
 
             exportData() {
                 try {
-                    const data = this.data.exportData();
-                    const dataStr = JSON.stringify(data, null, 2);
-                    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                    // Generar fecha para nombres de archivos
+                    const now = new Date();
+                    const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+                                       'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                    const folderName = `Gastos_${monthNames[now.getMonth()]}${now.getFullYear().toString().slice(-2)}`;
                     
-                    const link = document.createElement('a');
-                    link.href = URL.createObjectURL(dataBlob);
-                    link.download = `gastos_${new Date().toISOString().split('T')[0]}.json`;
-                    link.click();
+                    // Obtener gastos del usuario actual
+                    const userId = localStorage.getItem('currentUser');
+                    const allExpenses = [];
+                    
+                    // Recopilar gastos de todos los proyectos del usuario
+                    const projects = this.data.getUserProjects(userId);
+                    projects.forEach(project => {
+                        const projectExpenses = this.data.getUserExpenses(project.id);
+                        projectExpenses.forEach(expense => {
+                            expense.projectName = project.name;
+                            allExpenses.push(expense);
+                        });
+                    });
+
+                    if (allExpenses.length === 0) {
+                        alert('No hay gastos para exportar');
+                        return;
+                    }
+
+                    // Generar números de registro únicos
+                    const csvData = [];
+                    const filesToDownload = [];
+                    
+                    allExpenses.forEach((expense, index) => {
+                        // Número de registro: USR001_PRJ001_REG001 (ejemplo)
+                        const userNum = userId.slice(-3).padStart(3, '0');
+                        const projectNum = expense.project_id.slice(-3).padStart(3, '0');
+                        const regNum = (index + 1).toString().padStart(3, '0');
+                        const registrationNumber = `USR${userNum}_PRJ${projectNum}_REG${regNum}`;
+                        
+                        // Preparar fila CSV
+                        const csvRow = {
+                            'Num_Registro': registrationNumber,
+                            'Fecha': new Date(expense.expense_date || expense.created_at).toLocaleDateString('es-MX'),
+                            'Proyecto': expense.projectName,
+                            'Descripcion': expense.description || 'Sin descripción',
+                            'Categoria': expense.category,
+                            'Monto': expense.amount,
+                            'Tipo': expense.type || 'manual',
+                            'Archivos_Adjuntos': ''
+                        };
+
+                        // Manejar archivos según el tipo de gasto
+                        const attachedFiles = [];
+                        
+                        if (expense.type === 'factura' && expense.xmlData && expense.pdfData) {
+                            // Para facturas: usar el mismo nombre base para XML y PDF
+                            const baseFileName = expense.xmlFileName ? 
+                                expense.xmlFileName.replace('.xml', '') : 
+                                `factura_${registrationNumber}`;
+                            
+                            attachedFiles.push(`${baseFileName}.xml`);
+                            attachedFiles.push(`${baseFileName}.pdf`);
+                            
+                            // Agregar archivos a la lista de descarga
+                            filesToDownload.push({
+                                name: `${baseFileName}.xml`,
+                                data: expense.xmlData,
+                                type: 'text/xml'
+                            });
+                            filesToDownload.push({
+                                name: `${baseFileName}.pdf`,
+                                data: expense.pdfData,
+                                type: 'application/pdf'
+                            });
+                            
+                        } else if (expense.imageData) {
+                            // Para tickets: renombrar con número de registro
+                            const extension = expense.fileName ? 
+                                expense.fileName.split('.').pop() : 'jpg';
+                            const fileName = `${registrationNumber}.${extension}`;
+                            
+                            attachedFiles.push(fileName);
+                            
+                            // Agregar imagen a la lista de descarga
+                            filesToDownload.push({
+                                name: fileName,
+                                data: expense.imageData,
+                                type: `image/${extension}`
+                            });
+                        }
+                        
+                        csvRow['Archivos_Adjuntos'] = attachedFiles.join('; ');
+                        csvData.push(csvRow);
+                    });
+
+                    // Generar CSV
+                    const csvContent = this.generateCSV(csvData);
+                    
+                    // Descargar CSV
+                    const csvBlob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const csvLink = document.createElement('a');
+                    csvLink.href = URL.createObjectURL(csvBlob);
+                    csvLink.download = `${folderName}_Gastos.csv`;
+                    csvLink.click();
+                    
+                    // Descargar archivos individualmente
+                    setTimeout(() => {
+                        this.downloadFiles(filesToDownload, folderName);
+                    }, 500);
                     
                     // Ask about month-end reset
                     setTimeout(() => {
-                        if (confirm('¿Es cierre de mes? ¿Deseas reiniciar los datos de gastos para el nuevo mes?')) {
-                            if (confirm('⚠️ ATENCIÓN: Esto borrará todos los gastos registrados. Los datos ya están guardados en el archivo descargado. ¿Continuar?')) {
-                                this.data.resetData();
-                                this.loadRecentExpenses();
-                                this.updateBalance();
-                                this.showSuccessMessage('Datos reiniciados para nuevo mes');
+                        this.showCustomConfirm(
+                            '¿Es cierre de mes? ¿Deseas reiniciar los datos para el nuevo mes?',
+                            () => {
+                                this.showCustomConfirm(
+                                    '⚠️ ATENCIÓN: Esto borrará todos los gastos registrados. Los datos ya están descargados. ¿Continuar?',
+                                    () => {
+                                        this.data.resetData();
+                                        this.loadRecentExpenses();
+                                        this.updateBalance();
+                                        this.showSuccessMessage('Datos reiniciados para nuevo mes');
+                                    },
+                                    () => {
+                                        this.showSuccessMessage('Datos conservados');
+                                    }
+                                );
+                            },
+                            () => {
+                                this.showSuccessMessage('Descarga completada');
                             }
-                        }
-                    }, 1000);
+                        );
+                    }, 2000);
                     
                 } catch (error) {
                     alert('Error al exportar datos: ' + error.message);
                 }
+            }
+
+            generateCSV(data) {
+                if (data.length === 0) return '';
+                
+                // Obtener headers
+                const headers = Object.keys(data[0]);
+                
+                // Crear contenido CSV
+                let csvContent = headers.join(',') + '\n';
+                
+                data.forEach(row => {
+                    const values = headers.map(header => {
+                        const value = row[header];
+                        // Escapar comillas y envolver en comillas si contiene comas
+                        if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+                            return `"${value.replace(/"/g, '""')}"`;
+                        }
+                        return value;
+                    });
+                    csvContent += values.join(',') + '\n';
+                });
+                
+                return csvContent;
+            }
+
+            downloadFiles(files, folderName) {
+                if (files.length === 0) return;
+                
+                this.showSuccessMessage(`Descargando ${files.length} archivos...`);
+                
+                files.forEach((file, index) => {
+                    setTimeout(() => {
+                        // Crear link de descarga para cada archivo
+                        const link = document.createElement('a');
+                        link.href = file.data;
+                        link.download = file.name;
+                        link.click();
+                    }, index * 300); // Retraso de 300ms entre descargas para evitar bloqueos
+                });
+                
+                setTimeout(() => {
+                    alert(`📁 Descarga completada!\n\n` +
+                          `✅ CSV: ${folderName}_Gastos.csv\n` +
+                          `✅ ${files.length} archivos adjuntos\n\n` +
+                          `💡 Organiza todos los archivos en una carpeta llamada "${folderName}"`);
+                }, files.length * 300 + 1000);
             }
 
             showCustomConfirm(message, onYes, onNo) {
