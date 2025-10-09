@@ -11,6 +11,7 @@
         body { margin: 0; padding: 0; }
         .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; }
         .modal.show { display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .btn { padding: 12px 24px; border-radius: 8px; font-weight: 600; transition: all 0.2s; cursor: pointer; border: none; }
     </style>
 </head>
 <body class="bg-gray-100 m-0 p-0">
@@ -23,10 +24,10 @@
                 <p class="text-sm opacity-90" id="userInfo">Usuario</p>
             </div>
             <div class="flex items-center gap-2">
-                <button id="exportBtn" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 text-sm rounded">
+                <button id="exportBtn" class="btn bg-green-600 hover:bg-green-700 text-white px-2 py-1 text-sm">
                     <i class="fas fa-download"></i>
                 </button>
-                <button id="logoutBtn" class="bg-blue-700 hover:bg-blue-800 text-white px-3 py-2 rounded">
+                <button id="logoutBtn" class="btn bg-blue-700 hover:bg-blue-800 text-white px-3 py-2">
                     <i class="fas fa-sign-out-alt"></i>
                 </button>
             </div>
@@ -56,7 +57,7 @@
                            class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500" 
                            placeholder="********" required>
                 </div>
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white w-full py-3 rounded-lg">
+                <button type="submit" class="btn bg-blue-600 hover:bg-blue-700 text-white w-full">
                     Iniciar Sesión
                 </button>
             </form>
@@ -72,7 +73,7 @@
     <!-- Dashboard Screen -->
     <div id="dashboardScreen" class="hidden">
         
-        <!-- Project Selection - SIN ESPACIOS -->
+        <!-- Project Selection -->
         <div class="bg-white border-b p-3">
             <h2 class="text-lg font-bold text-gray-800 mb-2">Proyecto</h2>
             <select id="projectSelect" class="w-full px-4 py-3 border rounded-lg">
@@ -80,41 +81,41 @@
             </select>
         </div>
 
-        <!-- Quick Actions - SIN ESPACIOS -->
+        <!-- Quick Actions -->
         <div id="actionsCard" class="hidden bg-white border-b p-3">
             <h2 class="text-lg font-bold text-gray-800 mb-2">Acciones</h2>
             <div class="grid grid-cols-2 gap-3">
-                <button id="addExpenseBtn" class="bg-blue-500 hover:bg-blue-600 text-white p-3 text-center rounded-lg">
+                <button id="addExpenseBtn" class="btn bg-blue-500 hover:bg-blue-600 text-white p-3 text-center">
                     <i class="fas fa-receipt text-xl block mb-1"></i>
                     <span class="text-sm">Registrar Gasto</span>
                 </button>
-                <button id="viewReportsBtn" class="bg-purple-500 hover:bg-purple-600 text-white p-3 text-center rounded-lg">
+                <button id="viewReportsBtn" class="btn bg-purple-500 hover:bg-purple-600 text-white p-3 text-center">
                     <i class="fas fa-chart-bar text-xl block mb-1"></i>
                     <span class="text-sm">Ver Reportes</span>
                 </button>
             </div>
         </div>
 
-        <!-- Admin Actions - SIN ESPACIOS -->
+        <!-- Admin Actions -->
         <div id="adminActionsCard" class="hidden bg-gradient-to-r from-orange-500 to-red-500 text-white border-b p-3">
             <h2 class="text-lg font-bold mb-2">🔑 Funciones de Administrador</h2>
             <div class="grid grid-cols-3 gap-2">
-                <button id="manageProjectsBtn" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 text-center rounded-lg">
+                <button id="manageProjectsBtn" class="btn bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 text-center rounded-lg">
                     <i class="fas fa-project-diagram text-lg block mb-1"></i>
                     <span class="text-xs">Proyectos</span>
                 </button>
-                <button id="manageBudgetsBtn" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 text-center rounded-lg">
+                <button id="manageBudgetsBtn" class="btn bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 text-center rounded-lg">
                     <i class="fas fa-dollar-sign text-lg block mb-1"></i>
                     <span class="text-xs">Presupuestos</span>
                 </button>
-                <button id="manageUsersBtn" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 text-center rounded-lg">
+                <button id="manageUsersBtn" class="btn bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 text-center rounded-lg">
                     <i class="fas fa-users text-lg block mb-1"></i>
                     <span class="text-xs">Usuarios</span>
                 </button>
             </div>
         </div>
 
-        <!-- Balance - SIN ESPACIOS -->
+        <!-- Balance -->
         <div id="balanceCard" class="hidden bg-gradient-to-r from-green-500 to-blue-500 text-white border-b p-3">
             <div class="flex justify-between items-center mb-2">
                 <h3 class="text-lg font-bold">Saldo Disponible</h3>
@@ -124,7 +125,7 @@
             <p class="text-sm opacity-90 mt-1">Presupuesto - Gastos</p>
         </div>
 
-        <!-- Recent Expenses - SIN ESPACIOS -->
+        <!-- Recent Expenses -->
         <div id="expensesCard" class="hidden bg-white p-3">
             <h3 class="text-lg font-bold text-gray-800 mb-2">Gastos Recientes</h3>
             <div id="recentExpenses" class="space-y-2">
@@ -134,290 +135,1770 @@
 
     </div>
 
-    <!-- Modales y JavaScript aquí -->
-    <!-- [Se mantiene todo el JavaScript existente] -->
-
-    <script>
-        // ==================== DATA MANAGEMENT ====================
-        class DataManager {
-            constructor() {
-                this.initializeData();
-            }
-
-            initializeData() {
-                if (!localStorage.getItem('projects')) {
-                    const demoProjects = [
-                        { id: '1', name: 'Proyecto Alpha', budget: 50000, created_at: Date.now() },
-                        { id: '2', name: 'Proyecto Beta', budget: 30000, created_at: Date.now() }
-                    ];
-                    localStorage.setItem('projects', JSON.stringify(demoProjects));
-                }
-
-                if (!localStorage.getItem('expenses')) {
-                    localStorage.setItem('expenses', JSON.stringify([]));
-                }
-
-                if (!localStorage.getItem('currentUser')) {
-                    const demoUser = { id: '1', email: 'maria@empresa.com', name: 'María González' };
-                    localStorage.setItem('currentUser', JSON.stringify(demoUser));
-                }
-            }
-
-            getProjects() {
-                return JSON.parse(localStorage.getItem('projects') || '[]');
-            }
-
-            getExpenses() {
-                return JSON.parse(localStorage.getItem('expenses') || '[]');
-            }
-
-            addExpense(expense) {
-                const expenses = this.getExpenses();
-                expense.id = Date.now().toString();
-                expense.user_id = this.getCurrentUser().id;
-                expense.created_at = Date.now();
-                expenses.push(expense);
-                localStorage.setItem('expenses', JSON.stringify(expenses));
-                return expense;
-            }
-
-            exportData() {
-                const data = {
-                    projects: this.getProjects(),
-                    expenses: this.getExpenses(),
-                    exported_at: new Date().toISOString(),
-                    user: this.getCurrentUser()
-                };
-                return data;
-            }
-
-            resetData() {
-                localStorage.removeItem('expenses');
-                this.initializeData();
-            }
-
-            getCurrentUser() {
-                return JSON.parse(localStorage.getItem('currentUser') || '{}');
-            }
-
-            getProjectBalance(projectId) {
-                const project = this.getProjects().find(p => p.id === projectId);
-                if (!project) return 0;
-
-                const expenses = this.getExpenses()
-                    .filter(e => e.project_id === projectId && e.user_id === this.getCurrentUser().id)
-                    .reduce((sum, e) => sum + (e.amount || 0), 0);
-
-                return project.budget - expenses;
-            }
-
-            getUserExpenses(projectId = null) {
-                const userId = this.getCurrentUser().id;
-                let expenses = this.getExpenses().filter(e => e.user_id === userId);
-                
-                if (projectId) {
-                    expenses = expenses.filter(e => e.project_id === projectId);
-                }
-
-                return expenses.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
-            }
-        }
-
-        // ==================== APP CONTROLLER ====================
-        class ExpenseApp {
-            constructor() {
-                this.data = new DataManager();
-                this.currentProject = null;
-                this.currentExpenseType = null;
-                this.currentXMLData = null;
-                this.currentPDFData = null;
-                this.currentUser = null;
-                this.isAdmin = false;
-                
-                this.init();
-            }
-
-            init() {
-                this.setupEventListeners();
-                this.loadProjects();
-                this.showDashboard();
-            }
-
-            setupEventListeners() {
-                // Login
-                document.getElementById('loginForm').addEventListener('submit', (e) => this.handleLogin(e));
-                document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
-                document.getElementById('exportBtn').addEventListener('click', () => this.exportData());
-
-                // Project selection
-                document.getElementById('projectSelect').addEventListener('change', (e) => this.selectProject(e.target.value));
-
-                // Actions
-                document.getElementById('addExpenseBtn').addEventListener('click', () => alert('Funcionalidad en desarrollo'));
-                document.getElementById('viewReportsBtn').addEventListener('click', () => alert('Funcionalidad en desarrollo'));
-
-                // Request access
-                document.getElementById('requestAccessBtn').addEventListener('click', () => alert('Funcionalidad en desarrollo'));
-            }
-
-            handleLogin(e) {
-                e.preventDefault();
-                
-                const email = document.getElementById('loginEmail').value.trim().toLowerCase();
-                const password = document.getElementById('loginPassword').value;
-                
-                // Usuarios predefinidos
-                const users = {
-                    'ramon.rivas@me.com': { 
-                        password: 'admin123', 
-                        name: 'Ramón Rivas', 
-                        role: 'admin',
-                        id: 'admin_001'
-                    },
-                    'maria@empresa.com': { 
-                        password: 'user123', 
-                        name: 'María González', 
-                        role: 'user',
-                        id: 'user_001'
-                    }
-                };
-                
-                // Validar credenciales
-                const user = users[email];
-                if (!user || user.password !== password) {
-                    alert('❌ Credenciales incorrectas');
-                    return;
-                }
-                
-                // Guardar usuario actual
-                this.currentUser = user;
-                localStorage.setItem('currentUser', JSON.stringify(user));
-                this.isAdmin = user.role === 'admin';
-                
-                // Mostrar dashboard
-                this.showDashboard();
-                
-                // Mensaje de bienvenida
-                const welcomeMessage = this.isAdmin ? 
-                    `¡Bienvenido Administrador ${user.name}! 👑` : 
-                    `¡Bienvenido ${user.name}! 👋`;
-                
-                setTimeout(() => alert(welcomeMessage), 500);
-            }
-
-            logout() {
-                this.showLogin();
-            }
-
-            showLogin() {
-                document.getElementById('loginScreen').classList.remove('hidden');
-                document.getElementById('dashboardScreen').classList.add('hidden');
-                document.querySelector('nav').classList.add('hidden');
-            }
-
-            showDashboard() {
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('dashboardScreen').classList.remove('hidden');
-                document.querySelector('nav').classList.remove('hidden');
-                
-                const user = this.currentUser || this.data.getCurrentUser();
-                this.isAdmin = user.role === 'admin';
-                
-                document.getElementById('userInfo').textContent = `${user.name || user.email}${this.isAdmin ? ' (Admin)' : ''}`;
-                
-                // Mostrar funciones según el rol
-                if (this.isAdmin) {
-                    document.getElementById('adminActionsCard').classList.remove('hidden');
-                }
-                document.getElementById('actionsCard').classList.remove('hidden');
-                
-                this.loadProjects();
-                this.updateBalance();
-                this.loadRecentExpenses();
-            }
-
-            loadProjects() {
-                const select = document.getElementById('projectSelect');
-                const projects = this.data.getProjects();
-                
-                select.innerHTML = '<option value="">Seleccionar proyecto...</option>';
-                projects.forEach(project => {
-                    select.innerHTML += `<option value="${project.id}">${project.name}</option>`;
-                });
-            }
-
-            selectProject(projectId) {
-                if (!projectId) {
-                    this.currentProject = null;
-                    document.getElementById('balanceCard').classList.add('hidden');
-                    document.getElementById('expensesCard').classList.add('hidden');
-                    return;
-                }
-
-                const project = this.data.getProjects().find(p => p.id === projectId);
-                this.currentProject = project;
-                
-                this.updateBalance();
-                this.loadRecentExpenses();
-                
-                document.getElementById('balanceCard').classList.remove('hidden');
-                document.getElementById('expensesCard').classList.remove('hidden');
-            }
-
-            updateBalance() {
-                if (!this.currentProject) return;
-                
-                const balance = this.data.getProjectBalance(this.currentProject.id);
-                document.getElementById('currentBalance').textContent = 
-                    `$${balance.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
-            }
-
-            loadRecentExpenses() {
-                if (!this.currentProject) return;
-
-                const expenses = this.data.getUserExpenses(this.currentProject.id).slice(0, 5);
-                const container = document.getElementById('recentExpenses');
-
-                if (expenses.length === 0) {
-                    container.innerHTML = '<p class="text-gray-500 text-center py-2">No hay gastos registrados</p>';
-                    return;
-                }
-
-                container.innerHTML = expenses.map(expense => `
-                    <div class="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
-                        <div class="flex-1">
-                            <p class="font-medium text-sm">${expense.description || 'Sin descripción'}</p>
-                            <p class="text-xs text-gray-600">${expense.category} • ${new Date(expense.expense_date || expense.created_at).toLocaleDateString('es-MX')}</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="font-bold text-red-600 text-sm">-$${expense.amount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+    <!-- Modal: Expense Type Selection -->
+    <div id="expenseTypeModal" class="modal">
+        <div class="modal-content p-6 w-full max-w-md">
+            <h2 class="text-xl font-bold mb-6">Tipo de Comprobante</h2>
+            
+            <div class="space-y-4">
+                <button id="typeFactura" class="w-full p-4 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg text-left">
+                    <div class="flex items-center">
+                        <i class="fas fa-file-invoice text-2xl text-green-600 mr-4"></i>
+                        <div>
+                            <h3 class="font-bold">Factura</h3>
+                            <p class="text-sm text-gray-600">XML + PDF</p>
                         </div>
                     </div>
-                `).join('');
+                </button>
+
+                <button id="typeTicket" class="w-full p-4 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg text-left">
+                    <div class="flex items-center">
+                        <i class="fas fa-receipt text-2xl text-blue-600 mr-4"></i>
+                        <div>
+                            <h3 class="font-bold">Ticket/Recibo</h3>
+                            <p class="text-sm text-gray-600">Imagen del ticket</p>
+                        </div>
+                    </div>
+                </button>
+
+                <button id="typeManual" class="w-full p-4 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg text-left">
+                    <div class="flex items-center">
+                        <i class="fas fa-edit text-2xl text-orange-600 mr-4"></i>
+                        <div>
+                            <h3 class="font-bold">Sin Comprobante</h3>
+                            <p class="text-sm text-gray-600">Captura manual</p>
+                        </div>
+                    </div>
+                </button>
+            </div>
+
+            <button id="closeExpenseTypeModal" class="btn bg-gray-300 hover:bg-gray-400 text-gray-700 w-full mt-6">
+                Cancelar
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal: Expense Form -->
+    <div id="expenseModal" class="modal">
+        <div class="modal-content p-6 w-full max-w-lg">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold" id="expenseModalTitle">Registrar Gasto</h2>
+                <button id="closeExpenseModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <form id="expenseForm" class="space-y-4">
+                <!-- File Upload Section -->
+                <div id="fileSection" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Archivo:</label>
+                    <input type="file" id="fileInput" class="w-full px-3 py-2 border rounded-lg">
+                    
+                    <!-- Image Preview -->
+                    <div id="imagePreview" class="hidden mt-3">
+                        <img id="previewImg" class="w-full max-w-xs mx-auto rounded-lg border" />
+                        <p class="text-xs text-gray-500 mt-1 text-center">Vista previa del ticket</p>
+                    </div>
+                </div>
+
+                <!-- Factura Files Section -->
+                <div id="facturaFilesSection" class="hidden space-y-4">
+                    <!-- XML File (PRIMERO - para extraer datos) -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            1. Archivo XML <span class="text-red-500">*</span>
+                        </label>
+                        <input type="file" id="xmlFileInput" accept=".xml" 
+                               class="w-full px-3 py-2 border rounded-lg">
+                        <p class="text-xs text-gray-500 mt-1">
+                            📄 El XML contiene los datos que llenarán automáticamente los campos
+                        </p>
+                        <div id="xmlStatus" class="hidden mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-800">
+                            ✅ XML procesado - Campos llenados automáticamente
+                        </div>
+                    </div>
+
+                    <!-- PDF File (SEGUNDO) -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            2. Archivo PDF <span class="text-red-500">*</span>
+                        </label>
+                        <input type="file" id="pdfFileInput" accept=".pdf" 
+                               class="w-full px-3 py-2 border rounded-lg">
+                        <p class="text-xs text-gray-500 mt-1">
+                            📑 Representación visual de la factura
+                        </p>
+                        <div id="pdfStatus" class="hidden mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+                            ✅ PDF cargado correctamente
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Date -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Fecha:</label>
+                    <input type="date" id="expenseDate" 
+                           class="w-full px-4 py-3 border rounded-lg" required>
+                </div>
+
+                <!-- Amount -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Monto (MXN):</label>
+                    <input type="number" id="expenseAmount" step="0.01" min="0.01" 
+                           class="w-full px-4 py-3 border rounded-lg" 
+                           placeholder="0.00" required>
+                    <div id="balanceWarning" class="hidden text-red-500 text-sm mt-1">
+                        ⚠️ Este monto excede el saldo disponible
+                    </div>
+                </div>
+
+                <!-- Category -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Categoría:</label>
+                    <select id="expenseCategory" class="w-full px-4 py-3 border rounded-lg" required>
+                        <option value="">Seleccionar categoría...</option>
+                        <option value="Producción">Producción</option>
+                        <option value="Comercial">Comercial</option>
+                        <option value="Administración">Administración</option>
+                    </select>
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Concepto:</label>
+                    <textarea id="expenseDescription" rows="3"
+                              class="w-full px-4 py-3 border rounded-lg"
+                              placeholder="Descripción del gasto" required></textarea>
+                </div>
+
+                <!-- Buttons -->
+                <div class="flex gap-3 pt-4">
+                    <button type="button" id="cancelExpenseBtn" 
+                            class="btn bg-gray-300 hover:bg-gray-400 text-gray-700 flex-1">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="saveExpenseBtn"
+                            class="btn bg-green-600 hover:bg-green-700 text-white flex-1">
+                        Guardar Gasto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Reports -->
+    <div id="reportsModal" class="modal">
+        <div class="modal-content p-6 w-full max-w-4xl">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">📊 Reportes</h2>
+                <button id="closeReportsModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Filters -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Proyecto:</label>
+                    <select id="reportProject" class="w-full px-4 py-3 border rounded-lg">
+                        <option value="">Todos los proyectos</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Categoría:</label>
+                    <select id="reportCategory" class="w-full px-4 py-3 border rounded-lg">
+                        <option value="">Todas las categorías</option>
+                        <option value="Producción">Producción</option>
+                        <option value="Comercial">Comercial</option>
+                        <option value="Administración">Administración</option>
+                    </select>
+                </div>
+            </div>
+
+            <button id="generateReport" class="btn bg-blue-600 hover:bg-blue-700 text-white mb-6">
+                Generar Reporte
+            </button>
+
+            <!-- Summary -->
+            <div id="reportSummary" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h3 class="font-bold text-blue-800">Total Gastado</h3>
+                    <p class="text-2xl font-bold text-blue-600" id="totalExpenses">$0.00</p>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <h3 class="font-bold text-green-800">Número de Gastos</h3>
+                    <p class="text-2xl font-bold text-green-600" id="expenseCount">0</p>
+                </div>
+                <div class="bg-yellow-50 p-4 rounded-lg">
+                    <h3 class="font-bold text-yellow-800">Promedio por Gasto</h3>
+                    <p class="text-2xl font-bold text-yellow-600" id="avgExpense">$0.00</p>
+                </div>
+            </div>
+
+            <!-- Expenses List -->
+            <div id="reportData" class="hidden">
+                <h3 class="text-lg font-bold mb-4">Detalle de Gastos</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse border border-gray-300">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border border-gray-300 px-4 py-2 text-left">Fecha</th>
+                                <th class="border border-gray-300 px-4 py-2 text-left">Concepto</th>
+                                <th class="border border-gray-300 px-4 py-2 text-left">Categoría</th>
+                                <th class="border border-gray-300 px-4 py-2 text-right">Monto</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Budget Management -->
+    <div id="budgetModal" class="modal">
+        <div class="modal-content p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">💰 Gestión de Presupuestos</h2>
+                <button id="closeBudgetModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <form id="budgetForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Proyecto:</label>
+                    <select id="budgetProject" class="w-full px-4 py-3 border rounded-lg" required>
+                        <option value="">Seleccionar proyecto...</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Agregar Saldo (MXN):</label>
+                    <input type="number" id="budgetAmount" step="0.01" min="0.01" 
+                           class="w-full px-4 py-3 border rounded-lg" 
+                           placeholder="0.00" required>
+                </div>
+
+                <div id="currentBudgetInfo" class="hidden p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p class="text-sm text-blue-800">
+                        <strong>Presupuesto actual:</strong> <span id="currentBudgetAmount">$0.00</span>
+                    </p>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" id="cancelBudgetBtn" 
+                            class="btn bg-gray-300 hover:bg-gray-400 text-gray-700 flex-1">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="saveBudgetBtn"
+                            class="btn bg-green-600 hover:bg-green-700 text-white flex-1">
+                        Agregar Saldo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: User Management -->
+    <div id="usersModal" class="modal">
+        <div class="modal-content p-6 w-full max-w-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">👥 Gestión de Usuarios</h2>
+                <button id="closeUsersModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <div class="space-y-6">
+                <!-- User Requests Section -->
+                <div>
+                    <h3 class="text-lg font-bold mb-4">📬 Solicitudes Pendientes</h3>
+                    <div id="pendingRequests" class="space-y-3">
+                        <!-- Requests will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Add User Form -->
+                <div class="border-t pt-6">
+                    <h3 class="text-lg font-bold mb-4">➕ Agregar Usuario Manualmente</h3>
+                    <form id="addUserForm" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Nombre:</label>
+                                <input type="text" id="newUserName" 
+                                       class="w-full px-4 py-3 border rounded-lg" 
+                                       placeholder="Juan Pérez" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Email:</label>
+                                <input type="email" id="newUserEmail" 
+                                       class="w-full px-4 py-3 border rounded-lg" 
+                                       placeholder="juan@empresa.com" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn bg-blue-600 hover:bg-blue-700 text-white w-full">
+                            <i class="fas fa-user-plus mr-2"></i>Crear Usuario
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: User Request Form (for new users) -->
+    <div id="userRequestModal" class="modal">
+        <div class="modal-content p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">📝 Solicitar Acceso</h2>
+                <button id="closeUserRequestModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <form id="userRequestForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nombre completo:</label>
+                    <input type="text" id="requestUserName" 
+                           class="w-full px-4 py-3 border rounded-lg" 
+                           placeholder="Tu nombre completo" required>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email corporativo:</label>
+                    <input type="email" id="requestUserEmail" 
+                           class="w-full px-4 py-3 border rounded-lg" 
+                           placeholder="tu@empresa.com" required>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Justificación:</label>
+                    <textarea id="requestReason" rows="3"
+                              class="w-full px-4 py-3 border rounded-lg"
+                              placeholder="¿Por qué necesitas acceso al sistema?" required></textarea>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" id="cancelRequestBtn" 
+                            class="btn bg-gray-300 hover:bg-gray-400 text-gray-700 flex-1">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="submitRequestBtn"
+                            class="btn bg-blue-600 hover:bg-blue-700 text-white flex-1">
+                        Enviar Solicitud
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Project Management -->
+    <div id="projectsModal" class="modal">
+        <div class="modal-content p-6 w-full max-w-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">📁 Gestión de Proyectos</h2>
+                <button id="closeProjectsModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <div class="space-y-6">
+                <!-- Current Projects -->
+                <div>
+                    <h3 class="text-lg font-bold mb-4">📋 Proyectos Existentes</h3>
+                    <div id="currentProjects" class="space-y-3">
+                        <!-- Projects will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Add Project Form -->
+                <div class="border-t pt-6">
+                    <h3 class="text-lg font-bold mb-4">➕ Crear Nuevo Proyecto</h3>
+                    <form id="addProjectForm" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Proyecto:</label>
+                                <input type="text" id="newProjectName" 
+                                       class="w-full px-4 py-3 border rounded-lg" 
+                                       placeholder="Proyecto Delta" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Presupuesto Inicial (MXN):</label>
+                                <input type="number" id="newProjectBudget" step="0.01" min="0.01"
+                                       class="w-full px-4 py-3 border rounded-lg" 
+                                       placeholder="25000.00" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn bg-green-600 hover:bg-green-700 text-white w-full">
+                            <i class="fas fa-plus mr-2"></i>Crear Proyecto
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modales de Gestión de Usuarios -->
+    <div id="usersModal" class="modal">
+        <div class="modal-content p-6 w-full max-w-4xl">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">👥 Gestión de Usuarios</h2>
+                <button id="closeUsersModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <div class="space-y-6">
+                <!-- Current Users -->
+                <div>
+                    <h3 class="text-lg font-bold mb-4">👤 Usuarios del Sistema</h3>
+                    <div id="currentUsers" class="space-y-3">
+                        <!-- Users will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Add User Form -->
+                <div class="border-t pt-6">
+                    <h3 class="text-lg font-bold mb-4">➕ Agregar Nuevo Usuario</h3>
+                    <form id="addUserForm" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Nombre:</label>
+                                <input type="text" id="newUserName" 
+                                       class="w-full px-4 py-3 border rounded-lg" 
+                                       placeholder="Juan Pérez" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Email:</label>
+                                <input type="email" id="newUserEmail" 
+                                       class="w-full px-4 py-3 border rounded-lg" 
+                                       placeholder="juan@empresa.com" required>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Rol:</label>
+                                <select id="newUserRole" class="w-full px-4 py-3 border rounded-lg" required>
+                                    <option value="">Seleccionar rol...</option>
+                                    <option value="admin">👑 Administrador</option>
+                                    <option value="user">👤 Usuario</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Contraseña Temporal:</label>
+                                <input type="text" id="newUserPassword" 
+                                       class="w-full px-4 py-3 border rounded-lg" 
+                                       placeholder="admin123" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn bg-green-600 hover:bg-green-700 text-white w-full">
+                            <i class="fas fa-user-plus mr-2"></i>Crear Usuario
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Confirmación personalizada -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content p-6 w-full max-w-md bg-white rounded-lg shadow-xl">
+            <div class="text-center">
+                <div class="mb-4">
+                    <i id="confirmIcon" class="fas fa-question-circle text-4xl text-yellow-500"></i>
+                </div>
+                <h3 id="confirmTitle" class="text-lg font-bold text-gray-800 mb-2">Confirmación</h3>
+                <p id="confirmMessage" class="text-gray-600 mb-6">¿Estás seguro?</p>
+                
+                <div class="flex gap-3">
+                    <button id="confirmNo" class="btn bg-gray-300 hover:bg-gray-400 text-gray-700 flex-1 py-3">
+                        NO
+                    </button>
+                    <button id="confirmYes" class="btn bg-red-600 hover:bg-red-700 text-white flex-1 py-3">
+                        SÍ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// ==========================================
+// 📊 CLASE PRINCIPAL: DATA MANAGER
+// ==========================================
+class DataManager {
+    constructor() {
+        this.users = this.loadUsers();
+        this.projects = this.loadProjects();
+        this.expenses = this.loadExpenses();
+        this.currentUser = null;
+        this.registrationCounter = this.loadRegistrationCounter();
+        this.initializeDefaultData();
+    }
+
+    // 🔄 Inicializar datos por defecto
+    initializeDefaultData() {
+        // Usuarios por defecto
+        if (this.users.length === 0) {
+            this.users = [
+                { id: '1', name: 'Ramón Rivas', email: 'ramon.rivas@me.com', password: 'admin123', role: 'admin' },
+                { id: '2', name: 'Usuario Demo', email: 'user@demo.com', password: 'user123', role: 'user' }
+            ];
+            this.saveUsers();
+        }
+
+        // Proyectos por defecto
+        if (this.projects.length === 0) {
+            this.projects = [
+                { id: '1', name: 'Proyecto Alpha', budget: 50000, spent: 0, active: true },
+                { id: '2', name: 'Proyecto Beta', budget: 75000, spent: 0, active: true }
+            ];
+            this.saveProjects();
+        }
+    }
+
+    // 🎯 Generar número de registro único
+    generateRegistrationNumber(userId, projectId) {
+        this.registrationCounter++;
+        this.saveRegistrationCounter();
+        
+        const userNum = userId.toString().padStart(3, '0');
+        const projectNum = projectId.toString().padStart(3, '0');
+        const regNum = this.registrationCounter.toString().padStart(3, '0');
+        
+        return `USR${userNum}_PRJ${projectNum}_REG${regNum}`;
+    }
+
+    // 💾 GESTIÓN DE ALMACENAMIENTO
+    loadUsers() {
+        const users = localStorage.getItem('idaconn_users');
+        return users ? JSON.parse(users) : [];
+    }
+
+    saveUsers() {
+        localStorage.setItem('idaconn_users', JSON.stringify(this.users));
+    }
+
+    loadProjects() {
+        const projects = localStorage.getItem('idaconn_projects');
+        return projects ? JSON.parse(projects) : [];
+    }
+
+    saveProjects() {
+        localStorage.setItem('idaconn_projects', JSON.stringify(this.projects));
+    }
+
+    loadExpenses() {
+        const expenses = localStorage.getItem('idaconn_expenses');
+        return expenses ? JSON.parse(expenses) : [];
+    }
+
+    saveExpenses() {
+        localStorage.setItem('idaconn_expenses', JSON.stringify(this.expenses));
+    }
+
+    loadRegistrationCounter() {
+        const counter = localStorage.getItem('idaconn_reg_counter');
+        return counter ? parseInt(counter) : 0;
+    }
+
+    saveRegistrationCounter() {
+        localStorage.setItem('idaconn_reg_counter', this.registrationCounter.toString());
+    }
+
+    // 🔐 AUTENTICACIÓN
+    login(email, password) {
+        const user = this.users.find(u => u.email === email && u.password === password);
+        if (user) {
+            this.currentUser = user;
+            localStorage.setItem('idaconn_current_user', JSON.stringify(user));
+            return user;
+        }
+        return null;
+    }
+
+    logout() {
+        this.currentUser = null;
+        localStorage.removeItem('idaconn_current_user');
+    }
+
+    getCurrentUser() {
+        if (this.currentUser) return this.currentUser;
+        
+        const saved = localStorage.getItem('idaconn_current_user');
+        if (saved) {
+            this.currentUser = JSON.parse(saved);
+            return this.currentUser;
+        }
+        return null;
+    }
+
+    // 👥 GESTIÓN DE USUARIOS
+    addUser(userData) {
+        const newUser = {
+            id: (this.users.length + 1).toString(),
+            ...userData
+        };
+        this.users.push(newUser);
+        this.saveUsers();
+        return newUser;
+    }
+
+    deleteUser(userId) {
+        this.users = this.users.filter(u => u.id !== userId);
+        this.saveUsers();
+    }
+
+    // 📁 GESTIÓN DE PROYECTOS
+    addProject(projectData) {
+        const newProject = {
+            id: (this.projects.length + 1).toString(),
+            ...projectData,
+            spent: 0,
+            active: true
+        };
+        this.projects.push(newProject);
+        this.saveProjects();
+        return newProject;
+    }
+
+    deleteProject(projectId) {
+        this.projects = this.projects.filter(p => p.id !== projectId);
+        this.saveProjects();
+    }
+
+    updateProjectBudget(projectId, newBudget) {
+        const project = this.projects.find(p => p.id === projectId);
+        if (project) {
+            project.budget = parseFloat(newBudget);
+            this.saveProjects();
+        }
+    }
+
+    // 💰 GESTIÓN DE GASTOS
+    addExpense(expenseData) {
+        const project = this.projects.find(p => p.id === expenseData.projectId);
+        if (!project) throw new Error('Proyecto no encontrado');
+
+        // Generar nombre único del archivo basado en el tipo
+        let fileName = '';
+        if (expenseData.type === 'factura' && expenseData.xmlData) {
+            // Para facturas, usar el RFC del emisor + folio
+            const rfc = expenseData.xmlData.emisor?.rfc || 'UNKNOWN';
+            const folio = expenseData.xmlData.folio || 'NOFOLIO';
+            fileName = `FACTURA_${rfc}_${folio}`;
+        } else if (expenseData.type === 'ticket') {
+            // Para tickets, usar timestamp
+            fileName = `TICKET_${Date.now()}`;
+        } else {
+            // Para manual, usar descripción simplificada
+            const desc = expenseData.description.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20);
+            fileName = `MANUAL_${desc}_${Date.now()}`;
+        }
+
+        const newExpense = {
+            id: (this.expenses.length + 1).toString(),
+            registrationNumber: this.generateRegistrationNumber(this.currentUser.id, expenseData.projectId),
+            fileName: fileName,
+            userId: this.currentUser.id,
+            userName: this.currentUser.name,
+            date: expenseData.date,
+            timestamp: new Date().toISOString(),
+            ...expenseData
+        };
+
+        // Actualizar presupuesto del proyecto
+        project.spent += parseFloat(expenseData.amount);
+        
+        this.expenses.push(newExpense);
+        this.saveExpenses();
+        this.saveProjects();
+        
+        return newExpense;
+    }
+
+    getProjectExpenses(projectId) {
+        return this.expenses.filter(e => e.projectId === projectId);
+    }
+
+    // 📊 EXPORTACIÓN DE DATOS
+    async exportData(projectId) {
+        const project = this.projects.find(p => p.id === projectId);
+        if (!project) throw new Error('Proyecto no encontrado');
+
+        const expenses = this.getProjectExpenses(projectId);
+        if (expenses.length === 0) {
+            throw new Error('No hay gastos para exportar en este proyecto');
+        }
+
+        // Generar CSV
+        const csvContent = this.generateCSV(expenses, project);
+        
+        // Descargar CSV
+        this.downloadCSV(csvContent, `Gastos_${project.name}_${new Date().toISOString().split('T')[0]}.csv`);
+        
+        // Descargar archivos individuales
+        await this.downloadFiles(expenses);
+        
+        return {
+            totalExpenses: expenses.length,
+            totalAmount: expenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0),
+            csvGenerated: true,
+            filesDownloaded: expenses.filter(e => e.fileData || e.xmlFileData || e.pdfFileData).length
+        };
+    }
+
+    generateCSV(expenses, project) {
+        const headers = [
+            'Número de Registro',
+            'Nombre del Archivo',
+            'Usuario',
+            'Fecha',
+            'Monto (MXN)',
+            'Categoría',
+            'Tipo',
+            'Concepto',
+            'Proyecto',
+            'Timestamp'
+        ];
+
+        const rows = expenses.map(expense => [
+            expense.registrationNumber,
+            expense.fileName,
+            expense.userName,
+            expense.date,
+            expense.amount,
+            expense.category,
+            expense.type,
+            `"${expense.description.replace(/"/g, '""')}"`, // Escape comillas
+            project.name,
+            expense.timestamp
+        ]);
+
+        // Agregar fila de totales
+        const totalAmount = expenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
+        rows.push([
+            '',
+            '',
+            '',
+            'TOTAL:',
+            totalAmount.toFixed(2),
+            '',
+            '',
+            '',
+            '',
+            ''
+        ]);
+
+        const csvContent = [headers, ...rows]
+            .map(row => row.join(','))
+            .join('\n');
+
+        return csvContent;
+    }
+
+    downloadCSV(content, fileName) {
+        const BOM = '\uFEFF'; // Byte Order Mark para UTF-8
+        const blob = new Blob([BOM + content], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    async downloadFiles(expenses) {
+        for (const expense of expenses) {
+            await new Promise(resolve => setTimeout(resolve, 100)); // Pequeña pausa entre descargas
+            
+            if (expense.type === 'factura') {
+                // Descargar XML
+                if (expense.xmlFileData) {
+                    this.downloadFile(expense.xmlFileData, `${expense.fileName}.xml`, 'application/xml');
+                }
+                // Descargar PDF
+                if (expense.pdfFileData) {
+                    this.downloadFile(expense.pdfFileData, `${expense.fileName}.pdf`, 'application/pdf');
+                }
+            } else if (expense.type === 'ticket' && expense.fileData) {
+                // Descargar imagen del ticket
+                const extension = this.getImageExtension(expense.fileData);
+                this.downloadFile(expense.fileData, `${expense.fileName}.${extension}`, `image/${extension}`);
+            }
+        }
+    }
+
+    downloadFile(base64Data, fileName, mimeType) {
+        try {
+            const byteCharacters = atob(base64Data.split(',')[1] || base64Data);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: mimeType });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error('Error downloading file:', fileName, error);
+        }
+    }
+
+    getImageExtension(base64Data) {
+        if (base64Data.startsWith('data:image/png')) return 'png';
+        if (base64Data.startsWith('data:image/jpeg')) return 'jpg';
+        if (base64Data.startsWith('data:image/jpg')) return 'jpg';
+        if (base64Data.startsWith('data:image/gif')) return 'gif';
+        return 'jpg'; // default
+    }
+
+    // 🔄 REINICIO DE MES
+    resetMonth() {
+        // Archivar gastos del mes actual
+        const currentMonth = new Date().toISOString().substring(0, 7); // YYYY-MM
+        const archivedKey = `idaconn_expenses_${currentMonth}`;
+        localStorage.setItem(archivedKey, JSON.stringify(this.expenses));
+        
+        // Reiniciar gastos y contadores
+        this.expenses = [];
+        this.registrationCounter = 0;
+        
+        // Reiniciar spent de proyectos
+        this.projects.forEach(project => {
+            project.spent = 0;
+        });
+        
+        this.saveExpenses();
+        this.saveProjects();
+        this.saveRegistrationCounter();
+    }
+}
+
+// ==========================================
+// 🎯 CLASE PRINCIPAL: EXPENSE APP
+// ==========================================
+class ExpenseApp {
+    constructor() {
+        this.dataManager = new DataManager();
+        this.currentExpenseType = null;
+        this.selectedProjectId = null;
+        this.ocrInProgress = false;
+        this.initializeApp();
+    }
+
+    // 🚀 Inicializar aplicación
+    initializeApp() {
+        this.setupEventListeners();
+        this.checkAutoLogin();
+    }
+
+    // 📱 Configurar event listeners
+    setupEventListeners() {
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', (e) => this.handleLogin(e));
+        document.getElementById('requestAccessBtn').addEventListener('click', () => this.showCustomConfirm(
+            'Solicitar Acceso',
+            'Contacta al administrador del sistema para obtener credenciales de acceso.',
+            () => {}
+        ));
+
+        // Dashboard
+        document.getElementById('logoutBtn').addEventListener('click', () => this.handleLogout());
+        document.getElementById('exportBtn').addEventListener('click', () => this.handleExport());
+        document.getElementById('projectSelect').addEventListener('change', (e) => this.handleProjectChange(e));
+        
+        // Quick Actions
+        document.getElementById('addExpenseBtn').addEventListener('click', () => this.showExpenseTypeModal());
+        document.getElementById('viewReportsBtn').addEventListener('click', () => this.showReportsModal());
+
+        // Admin Actions
+        document.getElementById('manageProjectsBtn').addEventListener('click', () => this.showProjectsModal());
+        document.getElementById('manageUsersBtn').addEventListener('click', () => this.showUsersModal());
+        document.getElementById('manageBudgetsBtn').addEventListener('click', () => this.showBudgetsModal());
+
+        // Expense Type Selection
+        document.getElementById('typeFactura').addEventListener('click', () => this.selectExpenseType('factura'));
+        document.getElementById('typeTicket').addEventListener('click', () => this.selectExpenseType('ticket'));
+        document.getElementById('typeManual').addEventListener('click', () => this.selectExpenseType('manual'));
+        document.getElementById('closeExpenseTypeModal').addEventListener('click', () => this.hideExpenseTypeModal());
+
+        // Expense Form
+        document.getElementById('expenseForm').addEventListener('submit', (e) => this.handleExpenseSubmit(e));
+        document.getElementById('cancelExpenseBtn').addEventListener('click', () => this.hideExpenseModal());
+        document.getElementById('closeExpenseModal').addEventListener('click', () => this.hideExpenseModal());
+
+        // File handling
+        document.getElementById('fileInput').addEventListener('change', (e) => this.handleFileChange(e));
+        document.getElementById('xmlFileInput').addEventListener('change', (e) => this.handleXMLFileChange(e));
+        document.getElementById('pdfFileInput').addEventListener('change', (e) => this.handlePDFFileChange(e));
+
+        // Amount validation
+        document.getElementById('expenseAmount').addEventListener('input', () => this.validateAmount());
+
+        // Reports Modal
+        document.getElementById('closeReportsModal').addEventListener('click', () => this.hideReportsModal());
+
+        // Projects Modal
+        document.getElementById('closeProjectsModal').addEventListener('click', () => this.hideProjectsModal());
+        document.getElementById('addProjectForm').addEventListener('submit', (e) => this.handleAddProject(e));
+
+        // Users Modal
+        document.getElementById('closeUsersModal').addEventListener('click', () => this.hideUsersModal());
+        document.getElementById('addUserForm').addEventListener('submit', (e) => this.handleAddUser(e));
+
+        // Confirmation Modal
+        document.getElementById('confirmNo').addEventListener('click', () => this.hideConfirmModal());
+        document.getElementById('confirmYes').addEventListener('click', () => this.confirmAction());
+    }
+
+    // 🔐 Verificar auto-login
+    checkAutoLogin() {
+        const user = this.dataManager.getCurrentUser();
+        if (user) {
+            this.showDashboard(user);
+        } else {
+            this.showLogin();
+        }
+    }
+
+    // 📝 LOGIN & AUTHENTICATION
+    handleLogin(e) {
+        e.preventDefault();
+        
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+
+        const user = this.dataManager.login(email, password);
+        
+        if (user) {
+            this.showDashboard(user);
+        } else {
+            this.showCustomConfirm(
+                'Error de Acceso',
+                'Credenciales incorrectas. Por favor verifica tu email y contraseña.',
+                () => {}
+            );
+        }
+    }
+
+    handleLogout() {
+        this.showCustomConfirm(
+            'Cerrar Sesión',
+            '¿Estás seguro de que quieres cerrar sesión?',
+            () => {
+                this.dataManager.logout();
+                this.showLogin();
+            }
+        );
+    }
+
+    // 🖥️ PANTALLAS
+    showLogin() {
+        document.getElementById('loginScreen').classList.remove('hidden');
+        document.getElementById('dashboardScreen').classList.add('hidden');
+        document.getElementById('loginEmail').focus();
+    }
+
+    showDashboard(user) {
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('dashboardScreen').classList.remove('hidden');
+        
+        // Update user info
+        document.getElementById('userInfo').textContent = `${user.name} (${user.role === 'admin' ? '👑 Admin' : '👤 Usuario'})`;
+        
+        // Show/hide admin functions
+        const adminCard = document.getElementById('adminActionsCard');
+        if (user.role === 'admin') {
+            adminCard.classList.remove('hidden');
+        } else {
+            adminCard.classList.add('hidden');
+        }
+
+        // Load projects and initialize dashboard
+        this.loadProjects();
+    }
+
+    // 📁 GESTIÓN DE PROYECTOS
+    loadProjects() {
+        const projectSelect = document.getElementById('projectSelect');
+        projectSelect.innerHTML = '<option value="">Seleccionar proyecto...</option>';
+        
+        this.dataManager.projects.forEach(project => {
+            if (project.active) {
+                const option = document.createElement('option');
+                option.value = project.id;
+                option.textContent = `${project.name} (Presupuesto: $${project.budget.toLocaleString()})`;
+                projectSelect.appendChild(option);
+            }
+        });
+    }
+
+    handleProjectChange(e) {
+        this.selectedProjectId = e.target.value;
+        
+        if (this.selectedProjectId) {
+            document.getElementById('actionsCard').classList.remove('hidden');
+            document.getElementById('balanceCard').classList.remove('hidden');
+            document.getElementById('expensesCard').classList.remove('hidden');
+            
+            this.updateBalance();
+            this.loadRecentExpenses();
+        } else {
+            document.getElementById('actionsCard').classList.add('hidden');
+            document.getElementById('balanceCard').classList.add('hidden');
+            document.getElementById('expensesCard').classList.add('hidden');
+        }
+    }
+
+    updateBalance() {
+        const project = this.dataManager.projects.find(p => p.id === this.selectedProjectId);
+        if (project) {
+            const available = project.budget - project.spent;
+            document.getElementById('currentBalance').textContent = `$${available.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+        }
+    }
+
+    loadRecentExpenses() {
+        const expenses = this.dataManager.getProjectExpenses(this.selectedProjectId);
+        const recentContainer = document.getElementById('recentExpenses');
+        
+        if (expenses.length === 0) {
+            recentContainer.innerHTML = '<p class="text-gray-500 text-center py-2">No hay gastos registrados</p>';
+            return;
+        }
+
+        const recent = expenses.slice(-5).reverse();
+        recentContainer.innerHTML = recent.map(expense => `
+            <div class="bg-gray-50 p-3 rounded-lg border">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <div class="font-medium text-gray-800">$${parseFloat(expense.amount).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div>
+                        <div class="text-sm text-gray-600">${expense.description}</div>
+                        <div class="text-xs text-gray-500">${expense.category} • ${expense.date}</div>
+                    </div>
+                    <div class="text-xs text-blue-600 font-mono">${expense.registrationNumber}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // 💰 GESTIÓN DE GASTOS
+    showExpenseTypeModal() {
+        if (!this.selectedProjectId) {
+            this.showCustomConfirm(
+                'Proyecto Requerido',
+                'Por favor selecciona un proyecto antes de registrar un gasto.',
+                () => {}
+            );
+            return;
+        }
+        
+        document.getElementById('expenseTypeModal').classList.add('show');
+    }
+
+    hideExpenseTypeModal() {
+        document.getElementById('expenseTypeModal').classList.remove('show');
+    }
+
+    selectExpenseType(type) {
+        this.currentExpenseType = type;
+        this.hideExpenseTypeModal();
+        this.showExpenseModal();
+    }
+
+    showExpenseModal() {
+        // Reset form
+        document.getElementById('expenseForm').reset();
+        document.getElementById('expenseDate').value = new Date().toISOString().split('T')[0];
+        
+        // Configure modal based on type
+        const modal = document.getElementById('expenseModal');
+        const title = document.getElementById('expenseModalTitle');
+        const fileSection = document.getElementById('fileSection');
+        const facturaSection = document.getElementById('facturaFilesSection');
+        
+        // Reset visibility
+        fileSection.classList.add('hidden');
+        facturaSection.classList.add('hidden');
+        document.getElementById('imagePreview').classList.add('hidden');
+        document.getElementById('xmlStatus').classList.add('hidden');
+        document.getElementById('pdfStatus').classList.add('hidden');
+
+        switch(this.currentExpenseType) {
+            case 'factura':
+                title.textContent = '📄 Registrar Factura (XML + PDF)';
+                facturaSection.classList.remove('hidden');
+                break;
+            case 'ticket':
+                title.textContent = '🎫 Registrar Ticket/Recibo';
+                fileSection.classList.remove('hidden');
+                document.getElementById('fileInput').accept = 'image/*';
+                break;
+            case 'manual':
+                title.textContent = '✏️ Registro Manual';
+                break;
+        }
+        
+        modal.classList.add('show');
+    }
+
+    hideExpenseModal() {
+        document.getElementById('expenseModal').classList.remove('show');
+        this.currentExpenseType = null;
+        this.ocrInProgress = false;
+    }
+
+    // 📄 MANEJO DE ARCHIVOS XML
+    async handleXMLFileChange(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+            const xmlText = await this.readFileAsText(file);
+            const xmlData = this.parseXMLInvoice(xmlText);
+            
+            if (xmlData) {
+                // Fill form with XML data
+                document.getElementById('expenseAmount').value = xmlData.total || '';
+                document.getElementById('expenseDescription').value = xmlData.concepto || '';
+                document.getElementById('expenseDate').value = xmlData.fecha || document.getElementById('expenseDate').value;
+                
+                // Show success status
+                document.getElementById('xmlStatus').classList.remove('hidden');
+                
+                // Store XML data and file content
+                this.currentXMLData = xmlData;
+                this.currentXMLFileData = await this.fileToBase64(file);
+            }
+        } catch (error) {
+            console.error('Error processing XML:', error);
+            this.showCustomConfirm(
+                'Error XML',
+                'No se pudo procesar el archivo XML. Verifica que sea un archivo CFDI válido.',
+                () => {}
+            );
+        }
+    }
+
+    parseXMLInvoice(xmlText) {
+        try {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+            
+            // Check for parsing errors
+            if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+                throw new Error('XML parsing error');
             }
 
-            exportData() {
-                try {
-                    const data = this.data.exportData();
-                    const dataStr = JSON.stringify(data, null, 2);
-                    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-                    
-                    const link = document.createElement('a');
-                    link.href = URL.createObjectURL(dataBlob);
-                    link.download = `gastos_${new Date().toISOString().split('T')[0]}.json`;
-                    link.click();
-                    
-                } catch (error) {
-                    alert('Error al exportar datos: ' + error.message);
+            // Get comprobante (main element)
+            const comprobante = xmlDoc.getElementsByTagName('cfdi:Comprobante')[0] || 
+                              xmlDoc.getElementsByTagName('Comprobante')[0];
+            
+            if (!comprobante) {
+                throw new Error('Not a valid CFDI');
+            }
+
+            // Extract basic data
+            const xmlData = {
+                version: comprobante.getAttribute('Version'),
+                fecha: comprobante.getAttribute('Fecha')?.split('T')[0],
+                folio: comprobante.getAttribute('Folio'),
+                serie: comprobante.getAttribute('Serie'),
+                total: comprobante.getAttribute('Total'),
+                subtotal: comprobante.getAttribute('SubTotal'),
+                moneda: comprobante.getAttribute('Moneda') || 'MXN'
+            };
+
+            // Extract emisor (issuer)
+            const emisor = xmlDoc.getElementsByTagName('cfdi:Emisor')[0] || 
+                          xmlDoc.getElementsByTagName('Emisor')[0];
+            if (emisor) {
+                xmlData.emisor = {
+                    rfc: emisor.getAttribute('Rfc'),
+                    nombre: emisor.getAttribute('Nombre')
+                };
+            }
+
+            // Extract first concept for description
+            const conceptos = xmlDoc.getElementsByTagName('cfdi:Concepto') ||
+                            xmlDoc.getElementsByTagName('Concepto');
+            if (conceptos.length > 0) {
+                const concepto = conceptos[0];
+                xmlData.concepto = concepto.getAttribute('Descripcion') || 
+                                 concepto.getAttribute('descripcion');
+            }
+
+            return xmlData;
+        } catch (error) {
+            console.error('XML parsing error:', error);
+            return null;
+        }
+    }
+
+    // 📄 MANEJO DE ARCHIVOS PDF
+    async handlePDFFileChange(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+            this.currentPDFFileData = await this.fileToBase64(file);
+            document.getElementById('pdfStatus').classList.remove('hidden');
+        } catch (error) {
+            console.error('Error processing PDF:', error);
+            this.showCustomConfirm(
+                'Error PDF',
+                'No se pudo procesar el archivo PDF.',
+                () => {}
+            );
+        }
+    }
+
+    // 🖼️ MANEJO DE IMÁGENES Y OCR
+    async handleFileChange(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Show image preview
+        const preview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            previewImg.src = e.target.result;
+            preview.classList.remove('hidden');
+            
+            // Store file data
+            this.currentFileData = e.target.result;
+            
+            // Start OCR processing
+            this.processImageWithOCR(e.target.result);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    async processImageWithOCR(imageData) {
+        if (this.ocrInProgress) return;
+        
+        this.ocrInProgress = true;
+        const saveBtn = document.getElementById('saveExpenseBtn');
+        const originalText = saveBtn.innerHTML;
+        
+        try {
+            // Show OCR progress
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando OCR...';
+            saveBtn.disabled = true;
+
+            // Process with Tesseract
+            const { data: { text } } = await Tesseract.recognize(imageData, 'spa', {
+                logger: m => {
+                    if (m.status === 'recognizing text') {
+                        const progress = Math.round(m.progress * 100);
+                        saveBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>OCR ${progress}%`;
+                    }
+                }
+            });
+
+            // Extract amount from OCR text
+            const detectedAmount = this.extractAmountFromText(text);
+            
+            if (detectedAmount) {
+                document.getElementById('expenseAmount').value = detectedAmount;
+                
+                // Show success message
+                saveBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Monto detectado: $' + detectedAmount;
+                setTimeout(() => {
+                    saveBtn.innerHTML = originalText;
+                    saveBtn.disabled = false;
+                }, 2000);
+            } else {
+                throw new Error('No se pudo detectar el monto');
+            }
+
+        } catch (error) {
+            console.error('OCR Error:', error);
+            saveBtn.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>OCR falló - Ingresar manualmente';
+            setTimeout(() => {
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
+            }, 3000);
+        } finally {
+            this.ocrInProgress = false;
+        }
+    }
+
+    extractAmountFromText(text) {
+        // Mexican receipt patterns
+        const patterns = [
+            /TOTAL[:\s]*\$?\s*([0-9]{1,3}(?:,?[0-9]{3})*\.?[0-9]{0,2})/i,
+            /IMPORTE[:\s]*\$?\s*([0-9]{1,3}(?:,?[0-9]{3})*\.?[0-9]{0,2})/i,
+            /\$\s*([0-9]{1,3}(?:,?[0-9]{3})*\.?[0-9]{0,2})/,
+            /([0-9]{1,3}(?:,?[0-9]{3})*\.[0-9]{2})/,
+            /PAGAR[:\s]*\$?\s*([0-9]{1,3}(?:,?[0-9]{3})*\.?[0-9]{0,2})/i
+        ];
+
+        for (const pattern of patterns) {
+            const match = text.match(pattern);
+            if (match) {
+                let amount = match[1].replace(/,/g, '');
+                const numAmount = parseFloat(amount);
+                
+                // Validate reasonable amount range
+                if (numAmount > 0 && numAmount < 1000000) {
+                    return numAmount.toFixed(2);
                 }
             }
         }
 
-        // Initialize app when DOM is loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            window.app = new ExpenseApp();
+        return null;
+    }
+
+    // 💰 VALIDACIÓN DE MONTOS
+    validateAmount() {
+        const amount = parseFloat(document.getElementById('expenseAmount').value) || 0;
+        const warning = document.getElementById('balanceWarning');
+        
+        if (!this.selectedProjectId) return;
+        
+        const project = this.dataManager.projects.find(p => p.id === this.selectedProjectId);
+        if (!project) return;
+        
+        const available = project.budget - project.spent;
+        
+        if (amount > available) {
+            warning.classList.remove('hidden');
+        } else {
+            warning.classList.add('hidden');
+        }
+    }
+
+    // 💾 GUARDAR GASTO
+    async handleExpenseSubmit(e) {
+        e.preventDefault();
+        
+        if (this.ocrInProgress) {
+            this.showCustomConfirm(
+                'OCR en Proceso',
+                'Espera a que termine el procesamiento OCR antes de guardar.',
+                () => {}
+            );
+            return;
+        }
+
+        try {
+            const formData = new FormData(e.target);
+            
+            const expenseData = {
+                projectId: this.selectedProjectId,
+                type: this.currentExpenseType,
+                date: formData.get('date') || document.getElementById('expenseDate').value,
+                amount: formData.get('amount') || document.getElementById('expenseAmount').value,
+                category: formData.get('category') || document.getElementById('expenseCategory').value,
+                description: formData.get('description') || document.getElementById('expenseDescription').value
+            };
+
+            // Validate required fields
+            if (!expenseData.date || !expenseData.amount || !expenseData.category || !expenseData.description) {
+                throw new Error('Por favor completa todos los campos requeridos');
+            }
+
+            // Add file data based on type
+            if (this.currentExpenseType === 'factura') {
+                if (!this.currentXMLFileData) {
+                    throw new Error('Se requiere el archivo XML para facturas');
+                }
+                if (!this.currentPDFFileData) {
+                    throw new Error('Se requiere el archivo PDF para facturas');
+                }
+                
+                expenseData.xmlFileData = this.currentXMLFileData;
+                expenseData.pdfFileData = this.currentPDFFileData;
+                expenseData.xmlData = this.currentXMLData;
+            } else if (this.currentExpenseType === 'ticket') {
+                if (!this.currentFileData) {
+                    throw new Error('Se requiere la imagen del ticket');
+                }
+                expenseData.fileData = this.currentFileData;
+            }
+
+            // Save expense
+            const savedExpense = this.dataManager.addExpense(expenseData);
+            
+            // Show success and update UI
+            this.hideExpenseModal();
+            this.updateBalance();
+            this.loadRecentExpenses();
+            
+            this.showCustomConfirm(
+                'Gasto Registrado',
+                `Gasto guardado exitosamente.\nNúmero de registro: ${savedExpense.registrationNumber}`,
+                () => {}
+            );
+            
+        } catch (error) {
+            console.error('Error saving expense:', error);
+            this.showCustomConfirm(
+                'Error',
+                error.message || 'No se pudo guardar el gasto',
+                () => {}
+            );
+        }
+    }
+
+    // 📊 EXPORTACIÓN DE DATOS
+    async handleExport() {
+        if (!this.selectedProjectId) {
+            this.showCustomConfirm(
+                'Proyecto Requerido',
+                'Selecciona un proyecto para exportar sus datos.',
+                () => {}
+            );
+            return;
+        }
+
+        try {
+            const exportBtn = document.getElementById('exportBtn');
+            const originalHTML = exportBtn.innerHTML;
+            
+            exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            exportBtn.disabled = true;
+
+            const result = await this.dataManager.exportData(this.selectedProjectId);
+            
+            this.showCustomConfirm(
+                'Exportación Completada',
+                `✅ Datos exportados exitosamente:\n\n• ${result.totalExpenses} gastos procesados\n• Total: $${result.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}\n• Archivo CSV generado\n• ${result.filesDownloaded} archivos descargados\n\nRevisa tu carpeta de descargas.`,
+                () => {}
+            );
+
+        } catch (error) {
+            console.error('Export error:', error);
+            this.showCustomConfirm(
+                'Error de Exportación',
+                error.message || 'No se pudo completar la exportación',
+                () => {}
+            );
+        } finally {
+            const exportBtn = document.getElementById('exportBtn');
+            exportBtn.innerHTML = '<i class="fas fa-download"></i>';
+            exportBtn.disabled = false;
+        }
+    }
+
+    // 📋 MODALES ADMINISTRATIVOS
+    showProjectsModal() {
+        this.loadProjectsInModal();
+        document.getElementById('projectsModal').classList.add('show');
+    }
+
+    hideProjectsModal() {
+        document.getElementById('projectsModal').classList.remove('show');
+    }
+
+    loadProjectsInModal() {
+        const container = document.getElementById('currentProjects');
+        
+        if (this.dataManager.projects.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-center py-4">No hay proyectos registrados</p>';
+            return;
+        }
+
+        container.innerHTML = this.dataManager.projects.map(project => {
+            const expenses = this.dataManager.getProjectExpenses(project.id);
+            const available = project.budget - project.spent;
+            const percentage = (project.spent / project.budget) * 100;
+            
+            return `
+                <div class="bg-gray-50 p-4 rounded-lg border">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h4 class="font-bold text-lg">${project.name}</h4>
+                            <p class="text-sm text-gray-600">${expenses.length} gastos registrados</p>
+                        </div>
+                        <button onclick="app.deleteProject('${project.id}')" 
+                                class="text-red-500 hover:text-red-700 p-1">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span>Presupuesto usado</span>
+                            <span>${percentage.toFixed(1)}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full" style="width: ${Math.min(percentage, 100)}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <label class="block text-gray-600">Presupuesto:</label>
+                            <input type="number" value="${project.budget}" 
+                                   onchange="app.updateProjectBudget('${project.id}', this.value)"
+                                   class="w-full px-2 py-1 border rounded text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-gray-600">Gastado:</label>
+                            <div class="font-medium">$${project.spent.toLocaleString()}</div>
+                        </div>
+                        <div>
+                            <label class="block text-gray-600">Disponible:</label>
+                            <div class="font-medium text-green-600">$${available.toLocaleString()}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async handleAddProject(e) {
+        e.preventDefault();
+        
+        try {
+            const projectData = {
+                name: document.getElementById('newProjectName').value,
+                budget: parseFloat(document.getElementById('newProjectBudget').value)
+            };
+
+            this.dataManager.addProject(projectData);
+            this.loadProjects(); // Reload project selector
+            this.loadProjectsInModal(); // Reload modal
+            
+            // Reset form
+            e.target.reset();
+            
+            this.showCustomConfirm(
+                'Proyecto Creado',
+                `El proyecto "${projectData.name}" ha sido creado exitosamente.`,
+                () => {}
+            );
+
+        } catch (error) {
+            console.error('Error creating project:', error);
+            this.showCustomConfirm(
+                'Error',
+                'No se pudo crear el proyecto',
+                () => {}
+            );
+        }
+    }
+
+    deleteProject(projectId) {
+        const project = this.dataManager.projects.find(p => p.id === projectId);
+        if (!project) return;
+
+        this.showCustomConfirm(
+            'Eliminar Proyecto',
+            `¿Estás seguro de eliminar el proyecto "${project.name}"? Esta acción no se puede deshacer.`,
+            () => {
+                this.dataManager.deleteProject(projectId);
+                this.loadProjects();
+                this.loadProjectsInModal();
+                
+                if (this.selectedProjectId === projectId) {
+                    this.selectedProjectId = null;
+                    document.getElementById('projectSelect').value = '';
+                    this.handleProjectChange({ target: { value: '' } });
+                }
+            }
+        );
+    }
+
+    updateProjectBudget(projectId, newBudget) {
+        this.dataManager.updateProjectBudget(projectId, newBudget);
+        this.loadProjectsInModal();
+        if (this.selectedProjectId === projectId) {
+            this.updateBalance();
+        }
+    }
+
+    // 👥 GESTIÓN DE USUARIOS
+    showUsersModal() {
+        this.loadUsersInModal();
+        document.getElementById('usersModal').classList.add('show');
+    }
+
+    hideUsersModal() {
+        document.getElementById('usersModal').classList.remove('show');
+    }
+
+    loadUsersInModal() {
+        const container = document.getElementById('currentUsers');
+        
+        container.innerHTML = this.dataManager.users.map(user => `
+            <div class="bg-gray-50 p-4 rounded-lg border">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h4 class="font-bold">${user.name}</h4>
+                        <p class="text-sm text-gray-600">${user.email}</p>
+                        <span class="inline-block px-2 py-1 text-xs rounded ${user.role === 'admin' ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'}">
+                            ${user.role === 'admin' ? '👑 Administrador' : '👤 Usuario'}
+                        </span>
+                    </div>
+                    <button onclick="app.deleteUser('${user.id}')" 
+                            class="text-red-500 hover:text-red-700 p-2"
+                            ${user.role === 'admin' && this.dataManager.users.filter(u => u.role === 'admin').length === 1 ? 'disabled' : ''}>
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async handleAddUser(e) {
+        e.preventDefault();
+        
+        try {
+            const userData = {
+                name: document.getElementById('newUserName').value,
+                email: document.getElementById('newUserEmail').value,
+                password: document.getElementById('newUserPassword').value,
+                role: document.getElementById('newUserRole').value
+            };
+
+            // Check if email already exists
+            if (this.dataManager.users.find(u => u.email === userData.email)) {
+                throw new Error('Ya existe un usuario con ese email');
+            }
+
+            this.dataManager.addUser(userData);
+            this.loadUsersInModal();
+            
+            // Reset form
+            e.target.reset();
+            
+            this.showCustomConfirm(
+                'Usuario Creado',
+                `Usuario "${userData.name}" creado exitosamente.`,
+                () => {}
+            );
+
+        } catch (error) {
+            console.error('Error creating user:', error);
+            this.showCustomConfirm(
+                'Error',
+                error.message || 'No se pudo crear el usuario',
+                () => {}
+            );
+        }
+    }
+
+    deleteUser(userId) {
+        const user = this.dataManager.users.find(u => u.id === userId);
+        if (!user) return;
+
+        // Prevent deleting the last admin
+        if (user.role === 'admin' && this.dataManager.users.filter(u => u.role === 'admin').length === 1) {
+            this.showCustomConfirm(
+                'No Permitido',
+                'No puedes eliminar el único administrador del sistema.',
+                () => {}
+            );
+            return;
+        }
+
+        this.showCustomConfirm(
+            'Eliminar Usuario',
+            `¿Estás seguro de eliminar al usuario "${user.name}"?`,
+            () => {
+                this.dataManager.deleteUser(userId);
+                this.loadUsersInModal();
+            }
+        );
+    }
+
+    // 📊 REPORTES
+    showReportsModal() {
+        if (!this.selectedProjectId) {
+            this.showCustomConfirm(
+                'Proyecto Requerido',
+                'Selecciona un proyecto para ver sus reportes.',
+                () => {}
+            );
+            return;
+        }
+        
+        this.loadReports();
+        document.getElementById('reportsModal').classList.add('show');
+    }
+
+    hideReportsModal() {
+        document.getElementById('reportsModal').classList.remove('show');
+    }
+
+    loadReports() {
+        // Implementation for reports would go here
+        // This is a placeholder for the reports functionality
+    }
+
+    showBudgetsModal() {
+        this.showCustomConfirm(
+            'Función Disponible',
+            'La gestión detallada de presupuestos está disponible en la sección de proyectos.',
+            () => this.showProjectsModal()
+        );
+    }
+
+    // 🔧 UTILIDADES
+    async readFileAsText(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = e => resolve(e.target.result);
+            reader.onerror = reject;
+            reader.readAsText(file);
         });
-    </script>
+    }
+
+    async fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = e => resolve(e.target.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // 💬 DIÁLOGOS PERSONALIZADOS
+    showCustomConfirm(title, message, onConfirm, confirmText = 'SÍ', cancelText = 'NO') {
+        document.getElementById('confirmTitle').textContent = title;
+        document.getElementById('confirmMessage').textContent = message;
+        document.getElementById('confirmYes').textContent = confirmText;
+        document.getElementById('confirmNo').textContent = cancelText;
+        
+        this.pendingConfirmAction = onConfirm;
+        document.getElementById('confirmModal').classList.add('show');
+    }
+
+    hideConfirmModal() {
+        document.getElementById('confirmModal').classList.remove('show');
+        this.pendingConfirmAction = null;
+    }
+
+    confirmAction() {
+        if (this.pendingConfirmAction) {
+            this.pendingConfirmAction();
+        }
+        this.hideConfirmModal();
+    }
+}
+
+// 🚀 INICIALIZAR APLICACIÓN
+let app;
+document.addEventListener('DOMContentLoaded', function() {
+    app = new ExpenseApp();
+});
+</script>
 
 </body>
 </html>
