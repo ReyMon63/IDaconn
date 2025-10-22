@@ -198,6 +198,14 @@ Una aplicación web progresiva (PWA) para la gestión de gastos empresariales co
 - **✅ Validación mejorada**: Botón se habilita correctamente cuando hay 10+ caracteres de contenido real
 - **✅ Event listeners optimizados**: Mejor manejo de eventos para evitar conflictos
 
+### 🚨 **CORRECCIÓN CRÍTICA: Sistema de Popups Reparado**
+- **🛠️ Función showCustomConfirm corregida**: Solucionado el problema donde los popups mostraban opciones incorrectas ("descargar" y "cerrar mes") en lugar de confirmaciones apropiadas
+- **✅ Parámetros por defecto actualizados**: Ahora usa "Confirmar" y "Cancelar" como textos por defecto
+- **🗑️ Eliminar proyecto mejorado**: El popup ahora muestra correctamente "¿Estás seguro de eliminar el proyecto?" con opciones "Sí, Eliminar" y "Cancelar"
+- **💰 Agregar aportación mejorado**: Flujo completamente rediseñado con confirmación previa y validación de entrada
+- **🔒 Validación robusta**: Verificación de montos válidos antes de procesar aportaciones
+- **📝 Mensajes claros**: Todos los popups ahora muestran contenido correcto y relevante para cada acción
+
 ### 🔐 Sistema de Usuarios Aprobados Corregido
 - **✅ Usuarios agregados a la lista**: Los usuarios aprobados ahora aparecen correctamente en la gestión de usuarios
 - **✅ Login con credenciales de email**: Las credenciales enviadas por correo permiten acceso exitoso al sistema

@@ -3777,7 +3777,7 @@ class ExpenseApp {
     }
 
     // 💬 DIÁLOGOS PERSONALIZADOS
-    showCustomConfirm(title, message, onConfirm, confirmText = 'Cerrar Mes', cancelText = 'Descargar', onCancel = null) {
+    showCustomConfirm(title, message, onConfirm, confirmText = 'Confirmar', cancelText = 'Cancelar', onCancel = null) {
 
         
         // Cerrar cualquier modal abierto primero
@@ -4818,24 +4818,51 @@ document.addEventListener('DOMContentLoaded', function() {
         const project = app.dataManager.projects.find(p => p.id === projectId);
         if (!project) return;
         
-        // Por ahora mostrar modal simple, luego se puede hacer más complejo
-        const amount = prompt(`¿Cuánto deseas aportar al proyecto "${project.name}"?`);
-        if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
-            const contributionData = {
-                amount: parseFloat(amount),
-                description: 'Aportación manual',
-                date: new Date().toISOString().split('T')[0]
-            };
-            
-            app.dataManager.addContribution(projectId, contributionData);
-            app.loadProjectsSection(); // Recargar la sección
-            
+        // Usar prompt por simplicidad, pero mejorado
+        const amount = prompt(`¿Cuánto deseas aportar al proyecto "${project.name}"?\n\nIngresa el monto (solo números):`);
+        
+        // Validar la entrada
+        if (amount === null) return; // Usuario canceló
+        if (amount.trim() === '' || isNaN(amount) || parseFloat(amount) <= 0) {
             app.showCustomConfirm(
-                'Aportación Agregada',
-                `Se agregaron $${parseFloat(amount).toLocaleString()} al proyecto "${project.name}".`,
-                () => {}
+                'Cantidad Inválida',
+                'Por favor ingresa una cantidad válida mayor a cero.',
+                () => {},
+                'Entendido',
+                'Cerrar'
             );
+            return;
         }
+        
+        // Confirmar la aportación
+        app.showCustomConfirm(
+            'Confirmar Aportación',
+            `¿Confirmas agregar $${parseFloat(amount).toLocaleString()} al proyecto "${project.name}"?`,
+            () => {
+                // Procesar la aportación
+                const contributionData = {
+                    amount: parseFloat(amount),
+                    description: 'Aportación manual',
+                    date: new Date().toISOString().split('T')[0]
+                };
+                
+                app.dataManager.addContribution(projectId, contributionData);
+                app.loadProjectsSection(); // Recargar la sección
+                
+                // Mostrar confirmación de éxito
+                setTimeout(() => {
+                    app.showCustomConfirm(
+                        'Aportación Agregada',
+                        `Se agregaron $${parseFloat(amount).toLocaleString()} al proyecto "${project.name}" exitosamente.`,
+                        () => {},
+                        'Perfecto',
+                        'Cerrar'
+                    );
+                }, 300);
+            },
+            'Sí, Agregar',
+            'Cancelar'
+        );
     };
     
     window.approveUser = function(requestId) {
