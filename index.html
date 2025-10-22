@@ -7,17 +7,57 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         body { margin: 0; padding: 0; }
-        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; }
-        .modal.show { display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .modal { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            right: 0; 
+            bottom: 0; 
+            background: rgba(0, 0, 0, 0.8); 
+            z-index: 1000; 
+            backdrop-filter: blur(3px);
+        }
+        .modal.show { 
+            display: flex; 
+            align-items: flex-start; 
+            justify-content: center; 
+            padding: 20px;
+            overflow-y: auto;
+            min-height: 100vh;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+            max-height: 90vh;
+            overflow-y: auto;
+            max-width: 100%;
+            position: relative;
+            margin: auto 0;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
         .btn { padding: 12px 24px; border-radius: 8px; font-weight: 600; transition: all 0.2s; cursor: pointer; border: none; }
+        .notification-badge { 
+            animation: pulse 2s infinite; 
+            z-index: 10; 
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
     </style>
 </head>
 <body class="bg-gray-100 m-0 p-0">
 
     <!-- Header -->
-    <nav class="bg-blue-600 text-white p-3">
+    <nav id="appHeader" class="bg-blue-600 text-white p-3 hidden">
         <div class="flex justify-between items-center">
             <div>
                 <h1 class="text-xl font-bold">IDACONN - Gestor de Gastos</h1>
@@ -104,14 +144,65 @@
                     <i class="fas fa-project-diagram text-lg block mb-1"></i>
                     <span class="text-xs">Proyectos</span>
                 </button>
-                <button id="manageBudgetsBtn" class="btn bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 text-center rounded-lg">
-                    <i class="fas fa-dollar-sign text-lg block mb-1"></i>
-                    <span class="text-xs">Presupuestos</span>
+                <button id="manageRequestsBtn" class="btn bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 text-center rounded-lg">
+                    <i class="fas fa-user-clock text-lg block mb-1"></i>
+                    <span class="text-xs">Solicitudes</span>
                 </button>
                 <button id="manageUsersBtn" class="btn bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 text-center rounded-lg">
                     <i class="fas fa-users text-lg block mb-1"></i>
                     <span class="text-xs">Usuarios</span>
                 </button>
+            </div>
+        </div>
+
+        <!-- Gestión de Solicitudes (Solo Admin) -->
+        <div id="requestsManagementCard" class="hidden bg-white border-b p-3">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-lg font-bold text-gray-800">⏳ Gestión de Solicitudes</h2>
+                <div class="flex items-center gap-2">
+                    <span id="requestsCount" class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-semibold">0 pendientes</span>
+                </div>
+            </div>
+            
+            <!-- Solicitudes Pendientes -->
+            <div id="pendingRequestsContainer" class="space-y-2 max-h-80 overflow-y-auto">
+                <!-- Las solicitudes pendientes aparecerán aquí automáticamente -->
+            </div>
+        </div>
+
+        <!-- Gestión de Usuarios Registrados (Solo Admin) -->
+        <div id="usersManagementCard" class="hidden bg-white border-b p-3">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-lg font-bold text-gray-800">👥 Gestión de Usuarios</h2>
+                <div class="flex items-center gap-2">
+                    <span id="usersCount" class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-semibold">0 usuarios</span>
+                    <button id="addNewUserBtn" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">
+                        <i class="fas fa-plus mr-1"></i>Agregar
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Lista de Usuarios Registrados -->
+            <div id="registeredUsersContainer" class="space-y-2 max-h-80 overflow-y-auto">
+                <!-- Los usuarios aparecerán aquí automáticamente -->
+            </div>
+        </div>
+
+        <!-- Gestión de Proyectos (Solo Admin) -->
+        <div id="projectsManagementCard" class="hidden bg-white border-b p-3">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-lg font-bold text-gray-800">📋 Gestión de Proyectos</h2>
+                <div class="flex items-center gap-2">
+                    <span id="projectsCount" class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-semibold">0 proyectos</span>
+                    <button id="addNewProjectBtn" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">
+                        <i class="fas fa-plus mr-1"></i>Agregar
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Lista de Proyectos -->
+            <div id="registeredProjectsContainer" class="space-y-2 max-h-80 overflow-y-auto">
+                <!-- Los proyectos aparecerán aquí automáticamente -->
             </div>
         </div>
 
@@ -296,56 +387,64 @@
                 </button>
             </div>
 
-            <!-- Filters -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Proyecto:</label>
-                    <select id="reportProject" class="w-full px-4 py-3 border rounded-lg">
-                        <option value="">Todos los proyectos</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Categoría:</label>
-                    <select id="reportCategory" class="w-full px-4 py-3 border rounded-lg">
-                        <option value="">Todas las categorías</option>
-                        <option value="Producción">Producción</option>
-                        <option value="Comercial">Comercial</option>
-                        <option value="Administración">Administración</option>
-                    </select>
+            <!-- Project Info -->
+            <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-lg font-bold text-blue-800" id="reportProjectName">Proyecto</h3>
+                        <p class="text-sm text-blue-600" id="reportProjectInfo">Información del proyecto</p>
+                    </div>
+                    <button id="exportReportBtn" class="btn bg-blue-600 hover:bg-blue-700 text-white">
+                        <i class="fas fa-file-export mr-2"></i>Exportar Datos
+                    </button>
                 </div>
             </div>
 
-            <button id="generateReport" class="btn bg-blue-600 hover:bg-blue-700 text-white mb-6">
-                Generar Reporte
-            </button>
-
             <!-- Summary -->
-            <div id="reportSummary" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div class="bg-blue-50 p-4 rounded-lg">
-                    <h3 class="font-bold text-blue-800">Total Gastado</h3>
-                    <p class="text-2xl font-bold text-blue-600" id="totalExpenses">$0.00</p>
+            <div id="reportSummary" class="hidden grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-red-50 p-4 rounded-lg border-l-4 border-red-400">
+                    <h3 class="font-bold text-red-800">Total Gastado</h3>
+                    <p class="text-2xl font-bold text-red-600" id="totalExpenses">$0.00</p>
+                    <p class="text-sm text-red-500" id="expenseCount">0 gastos</p>
                 </div>
-                <div class="bg-green-50 p-4 rounded-lg">
-                    <h3 class="font-bold text-green-800">Número de Gastos</h3>
-                    <p class="text-2xl font-bold text-green-600" id="expenseCount">0</p>
+                <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-400">
+                    <h3 class="font-bold text-green-800">Total Aportado</h3>
+                    <p class="text-2xl font-bold text-green-600" id="totalContributions">$0.00</p>
+                    <p class="text-sm text-green-500" id="contributionCount">0 aportaciones</p>
                 </div>
-                <div class="bg-yellow-50 p-4 rounded-lg">
-                    <h3 class="font-bold text-yellow-800">Promedio por Gasto</h3>
+                <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
+                    <h3 class="font-bold text-blue-800">Balance Neto</h3>
+                    <p class="text-2xl font-bold text-blue-600" id="netBalance">$0.00</p>
+                    <p class="text-sm text-blue-500" id="balanceStatus">Disponible</p>
+                </div>
+                <div class="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-400">
+                    <h3 class="font-bold text-yellow-800">Promedio/Gasto</h3>
                     <p class="text-2xl font-bold text-yellow-600" id="avgExpense">$0.00</p>
+                    <p class="text-sm text-yellow-500" id="totalMovements">0 movimientos</p>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div id="reportCharts" class="hidden mb-6">
+                <div class="bg-white p-4 rounded-lg border">
+                    <h3 class="text-lg font-bold mb-4">Gastos por Categoría</h3>
+                    <canvas id="categoryChart" style="height: 400px;"></canvas>
                 </div>
             </div>
 
             <!-- Expenses List -->
             <div id="reportData" class="hidden">
-                <h3 class="text-lg font-bold mb-4">Detalle de Gastos</h3>
+                <h3 class="text-lg font-bold mb-4">Detalle de Movimientos</h3>
                 <div class="overflow-x-auto">
                     <table class="w-full border-collapse border border-gray-300">
                         <thead>
                             <tr class="bg-gray-100">
+                                <th class="border border-gray-300 px-4 py-2 text-left">Tipo</th>
                                 <th class="border border-gray-300 px-4 py-2 text-left">Fecha</th>
                                 <th class="border border-gray-300 px-4 py-2 text-left">Concepto</th>
                                 <th class="border border-gray-300 px-4 py-2 text-left">Categoría</th>
                                 <th class="border border-gray-300 px-4 py-2 text-right">Monto</th>
+                                <th class="border border-gray-300 px-4 py-2 text-left">Usuario</th>
                             </tr>
                         </thead>
                         <tbody id="reportTableBody">
@@ -353,51 +452,6 @@
                     </table>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Modal: Budget Management -->
-    <div id="budgetModal" class="modal">
-        <div class="modal-content p-6 w-full max-w-md">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold">💰 Gestión de Presupuestos</h2>
-                <button id="closeBudgetModal" class="text-gray-500 hover:text-gray-700">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-
-            <form id="budgetForm" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Proyecto:</label>
-                    <select id="budgetProject" class="w-full px-4 py-3 border rounded-lg" required>
-                        <option value="">Seleccionar proyecto...</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Agregar Saldo (MXN):</label>
-                    <input type="number" id="budgetAmount" step="0.01" min="0.01" 
-                           class="w-full px-4 py-3 border rounded-lg" 
-                           placeholder="0.00" required>
-                </div>
-
-                <div id="currentBudgetInfo" class="hidden p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p class="text-sm text-blue-800">
-                        <strong>Presupuesto actual:</strong> <span id="currentBudgetAmount">$0.00</span>
-                    </p>
-                </div>
-
-                <div class="flex gap-3 pt-4">
-                    <button type="button" id="cancelBudgetBtn" 
-                            class="btn bg-gray-300 hover:bg-gray-400 text-gray-700 flex-1">
-                        Cancelar
-                    </button>
-                    <button type="submit" id="saveBudgetBtn"
-                            class="btn bg-green-600 hover:bg-green-700 text-white flex-1">
-                        Agregar Saldo
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
 
@@ -605,9 +659,54 @@
         </div>
     </div>
 
+    <!-- Modal: Aportación -->
+    <div id="contributionModal" class="modal">
+        <div class="modal-content p-6 w-full max-w-lg">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">💰 Registrar Aportación</h2>
+                <button id="closeContributionModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <form id="contributionForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Fecha:</label>
+                    <input type="date" id="contributionDate" 
+                           class="w-full px-4 py-3 border rounded-lg" required>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Monto (MXN):</label>
+                    <input type="number" id="contributionAmount" step="0.01" min="0.01" 
+                           class="w-full px-4 py-3 border rounded-lg" 
+                           placeholder="0.00" required>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Concepto:</label>
+                    <textarea id="contributionDescription" rows="3"
+                              class="w-full px-4 py-3 border rounded-lg"
+                              placeholder="Descripción de la aportación" required></textarea>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" id="cancelContributionBtn" 
+                            class="btn bg-gray-300 hover:bg-gray-400 text-gray-700 flex-1">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="saveContributionBtn"
+                            class="btn bg-green-600 hover:bg-green-700 text-white flex-1">
+                        Guardar Aportación
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal: Confirmación personalizada -->
-    <div id="confirmModal" class="modal">
-        <div class="modal-content p-6 w-full max-w-md bg-white rounded-lg shadow-xl">
+    <div id="confirmModal" class="modal" style="z-index: 9999 !important; position: fixed !important;">
+        <div class="modal-content p-6 w-full max-w-md" style="background: white !important; margin-top: 100px;">
             <div class="text-center">
                 <div class="mb-4">
                     <i id="confirmIcon" class="fas fa-question-circle text-4xl text-yellow-500"></i>
@@ -616,13 +715,162 @@
                 <p id="confirmMessage" class="text-gray-600 mb-6">¿Estás seguro?</p>
                 
                 <div class="flex gap-3">
-                    <button id="confirmNo" class="btn bg-gray-300 hover:bg-gray-400 text-gray-700 flex-1 py-3">
-                        NO
+                    <button id="confirmNo" class="btn bg-green-600 hover:bg-green-700 text-white flex-1 py-3">
+                        <i class="fas fa-download mr-2"></i><span id="confirmNoText">Descargar</span>
                     </button>
                     <button id="confirmYes" class="btn bg-red-600 hover:bg-red-700 text-white flex-1 py-3">
-                        SÍ
+                        <i class="fas fa-calendar-times mr-2"></i><span id="confirmYesText">Cerrar Mes</span>
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Solicitar Acceso -->
+    <div id="requestAccessModal" class="modal">
+        <div class="modal-content p-6 w-full max-w-md">
+            <div class="text-center mb-6">
+                <i class="fas fa-user-plus text-4xl text-blue-500 mb-4"></i>
+                <h3 class="text-xl font-bold text-gray-800">Solicitar Acceso</h3>
+                <p class="text-gray-600">Completa el formulario para solicitar acceso al sistema</p>
+            </div>
+            
+            <form id="accessRequestForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nombre Completo:</label>
+                    <input type="text" id="requestName" class="w-full px-4 py-3 border rounded-lg" 
+                           placeholder="Tu nombre completo" required>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email Corporativo:</label>
+                    <input type="email" id="requestEmail" class="w-full px-4 py-3 border rounded-lg" 
+                           placeholder="tu.email@empresa.com" required>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Motivo de la Solicitud:</label>
+                    <textarea id="requestMessage" rows="3" class="w-full px-4 py-3 border rounded-lg" 
+                              placeholder="Describe brevemente por qué necesitas acceso al sistema..."></textarea>
+                </div>
+                
+                <div class="flex gap-3 pt-4">
+                    <button type="button" id="cancelAccessRequestBtn" 
+                            class="btn bg-gray-500 hover:bg-gray-600 text-white flex-1 py-3">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                            class="btn bg-blue-600 hover:bg-blue-700 text-white flex-1 py-3">
+                        <i class="fas fa-paper-plane mr-2"></i>Enviar Solicitud
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Editar Usuario -->
+    <div id="editUserModal" class="modal">
+        <div class="modal-content p-6 w-full max-w-md">
+            <div class="text-center mb-6">
+                <i class="fas fa-user-edit text-4xl text-blue-500 mb-4"></i>
+                <h3 class="text-xl font-bold text-gray-800">Editar Usuario</h3>
+                <p class="text-gray-600">Modifica los datos del usuario</p>
+            </div>
+            
+            <form id="editUserForm" class="space-y-4">
+                <input type="hidden" id="editUserId">
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nombre Completo:</label>
+                    <input type="text" id="editUserName" class="w-full px-4 py-3 border rounded-lg" 
+                           placeholder="Nombre completo" required>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email:</label>
+                    <input type="email" id="editUserEmail" class="w-full px-4 py-3 border rounded-lg" 
+                           placeholder="usuario@empresa.com" required>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Rol:</label>
+                    <select id="editUserRole" class="w-full px-4 py-3 border rounded-lg" required>
+                        <option value="user">👤 Usuario</option>
+                        <option value="admin">👑 Administrador</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nueva Contraseña (opcional):</label>
+                    <input type="password" id="editUserPassword" class="w-full px-4 py-3 border rounded-lg" 
+                           placeholder="Dejar vacío para mantener actual">
+                    <p class="text-xs text-gray-500 mt-1">Solo cambia si quieres asignar nueva contraseña</p>
+                </div>
+                
+                <div class="flex gap-3 pt-4">
+                    <button type="button" id="cancelEditUserBtn" 
+                            class="btn bg-gray-500 hover:bg-gray-600 text-white flex-1 py-3">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                            class="btn bg-blue-600 hover:bg-blue-700 text-white flex-1 py-3">
+                        <i class="fas fa-save mr-2"></i>Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Alerta Simple -->
+    <div id="alertModal" class="modal">
+        <div class="modal-content p-6 w-full max-w-md" style="background: white !important; margin-top: 100px;">
+            <div class="text-center">
+                <div class="mb-4">
+                    <i id="alertIcon" class="text-4xl mb-3"></i>
+                </div>
+                <h3 id="alertTitle" class="text-lg font-bold text-gray-800 mb-2">Información</h3>
+                <p id="alertMessage" class="text-gray-600 mb-6">Mensaje</p>
+                
+                <button id="alertOkBtn" class="btn bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 w-full">
+                    Entendido
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Cambio de Contraseña (Primer Login) -->
+    <div id="changePasswordModal" class="modal">
+        <div class="modal-content p-6 w-full max-w-md" style="background: white !important; margin-top: 100px;">
+            <div class="text-center">
+                <div class="mb-4">
+                    <i class="fas fa-key text-4xl text-orange-500 mb-3"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-800 mb-2">Cambio de Contraseña Obligatorio</h3>
+                <p class="text-gray-600 mb-6">Es tu primer acceso. Por seguridad, debes cambiar tu contraseña temporal.</p>
+                
+                <form id="changePasswordForm" class="space-y-4">
+                    <div class="text-left">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña Actual</label>
+                        <input type="password" id="currentPassword" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500" readonly>
+                    </div>
+                    
+                    <div class="text-left">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nueva Contraseña</label>
+                        <input type="password" id="newPassword" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500" minlength="6" required>
+                        <small class="text-gray-500">Mínimo 6 caracteres</small>
+                    </div>
+                    
+                    <div class="text-left">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Confirmar Nueva Contraseña</label>
+                        <input type="password" id="confirmPassword" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500" minlength="6" required>
+                    </div>
+                    
+                    <button type="submit" class="btn bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 w-full mt-6">
+                        <i class="fas fa-save mr-2"></i>Cambiar Contraseña
+                    </button>
+                </form>
+                
+                <p class="text-xs text-gray-500 mt-3">No puedes acceder al sistema hasta cambiar tu contraseña.</p>
             </div>
         </div>
     </div>
@@ -646,19 +894,86 @@ class DataManager {
         // Usuarios por defecto
         if (this.users.length === 0) {
             this.users = [
-                { id: '1', name: 'Ramón Rivas', email: 'ramon.rivas@me.com', password: 'admin123', role: 'admin' },
-                { id: '2', name: 'Usuario Demo', email: 'user@demo.com', password: 'user123', role: 'user' }
+                { id: '1', name: 'Ramón Rivas', email: 'ramon.rivas@me.com', password: 'admin123', role: 'admin' }
             ];
             this.saveUsers();
         }
 
-        // Proyectos por defecto
-        if (this.projects.length === 0) {
+        // Migrar proyectos antiguos a nueva estructura
+        this.migrateProjectsData();
+
+        // Proyectos por defecto (o si la migración falló/está incompleta)
+        const needsRecreation = this.projects.length === 0 || 
+                               this.projects.some(p => p.originalBudget === undefined && p.budget === undefined);
+        
+        if (needsRecreation) {
+            console.log('🔧 Recreando proyectos por defecto debido a datos incompletos');
             this.projects = [
-                { id: '1', name: 'Proyecto Alpha', budget: 50000, spent: 0, active: true },
-                { id: '2', name: 'Proyecto Beta', budget: 75000, spent: 0, active: true }
+                { 
+                    id: '1', 
+                    name: 'Proyecto Alpha', 
+                    originalBudget: 50000, 
+                    contributions: [], 
+                    spent: 0, 
+                    active: true 
+                },
+                { 
+                    id: '2', 
+                    name: 'Proyecto Beta', 
+                    originalBudget: 75000, 
+                    contributions: [], 
+                    spent: 0, 
+                    active: true 
+                }
             ];
             this.saveProjects();
+        }
+        
+        // Usuario pendiente de prueba (solo si no hay usuarios pendientes)
+        const pendingUsers = this.getPendingUsers();
+        if (pendingUsers.length === 0) {
+            const testRequest = {
+                id: Date.now().toString(),
+                name: 'María González',
+                email: 'maria.gonzalez@test.com',
+                message: 'Solicito acceso al sistema de gastos para el departamento de ventas.',
+                status: 'pending',
+                requestDate: new Date().toISOString()
+            };
+            this.savePendingUsers([testRequest]);
+            console.log('🧪 Usuario pendiente de prueba creado para testing del badge');
+        }
+    }
+
+    // 🔄 Migrar datos antiguos a nueva estructura
+    migrateProjectsData() {
+        let needsSave = false;
+        
+        this.projects.forEach(project => {
+            // Migrar proyecto con estructura antigua (budget) a nueva estructura (originalBudget + contributions)
+            if (project.budget !== undefined && project.originalBudget === undefined) {
+                project.originalBudget = project.budget;
+                project.contributions = project.contributions || [];
+                delete project.budget; // Eliminar propiedad antigua
+                needsSave = true;
+            }
+            
+            // Asegurar que tenga contributions array
+            if (!project.contributions) {
+                project.contributions = [];
+                needsSave = true;
+            }
+            
+            // Asegurar que tenga originalBudget
+            if (project.originalBudget === undefined) {
+                project.originalBudget = 0;
+                needsSave = true;
+            }
+        });
+        
+        if (needsSave) {
+            this.saveProjects();
+            console.log('✅ Proyectos migrados a nueva estructura');
         }
     }
 
@@ -754,16 +1069,59 @@ class DataManager {
         this.saveUsers();
     }
 
+    // 👥 GESTIÓN DE USUARIOS PENDIENTES
+    getPendingUsers() {
+        const pendingUsers = localStorage.getItem('idaconn_pending_users');
+        return pendingUsers ? JSON.parse(pendingUsers) : [];
+    }
+
+    savePendingUsers(users) {
+        localStorage.setItem('idaconn_pending_users', JSON.stringify(users));
+    }
+
+    addPendingUser(userData) {
+        const pendingUsers = this.getPendingUsers();
+        const newRequest = {
+            id: Date.now().toString(),
+            ...userData,
+            status: 'pending',
+            requestDate: new Date().toISOString()
+        };
+        pendingUsers.push(newRequest);
+        this.savePendingUsers(pendingUsers);
+        return newRequest;
+    }
+
+    removePendingUser(requestId) {
+        const pendingUsers = this.getPendingUsers();
+        const filtered = pendingUsers.filter(u => u.id !== requestId);
+        this.savePendingUsers(filtered);
+    }
+
     // 📁 GESTIÓN DE PROYECTOS
     addProject(projectData) {
+        // Validar datos de entrada
+        if (!projectData.name || !projectData.budget) {
+            throw new Error('Nombre y presupuesto son requeridos');
+        }
+        
+        const budget = parseFloat(projectData.budget);
+        if (isNaN(budget) || budget <= 0) {
+            throw new Error('El presupuesto debe ser un número mayor a 0');
+        }
+        
         const newProject = {
             id: (this.projects.length + 1).toString(),
-            ...projectData,
+            name: projectData.name.trim(),
+            originalBudget: budget,
+            contributions: [],
             spent: 0,
             active: true
         };
+        
         this.projects.push(newProject);
         this.saveProjects();
+        console.log('✅ Proyecto creado:', newProject);
         return newProject;
     }
 
@@ -772,12 +1130,44 @@ class DataManager {
         this.saveProjects();
     }
 
-    updateProjectBudget(projectId, newBudget) {
+    // 💰 GESTIÓN DE APORTACIONES
+    addContribution(projectId, contributionData) {
         const project = this.projects.find(p => p.id === projectId);
-        if (project) {
-            project.budget = parseFloat(newBudget);
-            this.saveProjects();
-        }
+        if (!project) throw new Error('Proyecto no encontrado');
+
+        const newContribution = {
+            id: (project.contributions.length + 1).toString(),
+            date: contributionData.date,
+            amount: parseFloat(contributionData.amount),
+            description: contributionData.description,
+            timestamp: new Date().toISOString(),
+            userId: this.currentUser.id,
+            userName: this.currentUser.name
+        };
+
+        project.contributions.push(newContribution);
+        this.saveProjects();
+        return newContribution;
+    }
+
+    // 📊 CÁLCULOS DE PRESUPUESTO
+    getTotalBudget(projectId) {
+        const project = this.projects.find(p => p.id === projectId);
+        if (!project) return 0;
+        
+        // Manejar proyectos que no están completamente migrados
+        const originalBudget = project.originalBudget || project.budget || 0;
+        const contributions = project.contributions || [];
+        const totalContributions = contributions.reduce((sum, contrib) => sum + contrib.amount, 0);
+        
+        return originalBudget + totalContributions;
+    }
+
+    getAvailableBudget(projectId) {
+        const project = this.projects.find(p => p.id === projectId);
+        if (!project) return 0;
+        
+        return this.getTotalBudget(projectId) - (project.spent || 0);
     }
 
     // 💰 GESTIÓN DE GASTOS
@@ -824,6 +1214,11 @@ class DataManager {
 
     getProjectExpenses(projectId) {
         return this.expenses.filter(e => e.projectId === projectId);
+    }
+
+    getTotalExpensesByProject(projectId) {
+        const expenses = this.getProjectExpenses(projectId);
+        return expenses.reduce((total, expense) => total + parseFloat(expense.amount || 0), 0);
     }
 
     // 📊 EXPORTACIÓN DE DATOS
@@ -965,23 +1360,270 @@ class DataManager {
 
     // 🔄 REINICIO DE MES
     resetMonth() {
+        console.log('🔥 INICIANDO RESETMONTH');
+        
         // Archivar gastos del mes actual
-        const currentMonth = new Date().toISOString().substring(0, 7); // YYYY-MM
+        const currentMonth = new Date().toISOString().substring(0, 7);
         const archivedKey = `idaconn_expenses_${currentMonth}`;
+        console.log('📦 Archivando gastos:', this.expenses.length);
         localStorage.setItem(archivedKey, JSON.stringify(this.expenses));
         
-        // Reiniciar gastos y contadores
+        // BORRAR DATOS COMPLETAMENTE
         this.expenses = [];
         this.registrationCounter = 0;
         
-        // Reiniciar spent de proyectos
+        // Reiniciar spent de TODOS los proyectos Y limpiar aportaciones
+        console.log('💰 Reiniciando', this.projects.length, 'proyectos');
         this.projects.forEach(project => {
+            console.log(`Proyecto ${project.name}: spent ${project.spent} -> 0`);
             project.spent = 0;
+            
+            // Limpiar aportaciones del proyecto
+            const contributionsCount = project.contributions ? project.contributions.length : 0;
+            console.log(`Proyecto ${project.name}: limpiando ${contributionsCount} aportaciones`);
+            project.contributions = [];
         });
         
-        this.saveExpenses();
-        this.saveProjects();
-        this.saveRegistrationCounter();
+        // FORZAR GUARDADO
+        localStorage.setItem('idaconn_expenses', JSON.stringify([]));
+        localStorage.setItem('idaconn_reg_counter', '0');
+        localStorage.setItem('idaconn_projects', JSON.stringify(this.projects));
+        
+        // Verificar que el reset fue exitoso
+        console.log('🔍 Verificación post-reset:');
+        console.log('📊 Gastos después del reset:', this.expenses.length);
+        console.log('🔢 Contador después del reset:', this.registrationCounter);
+        console.log('💰 Proyectos después del reset:', this.projects.map(p => ({
+            name: p.name, 
+            spent: p.spent, 
+            contributions: p.contributions ? p.contributions.length : 0
+        })));
+        
+        console.log('✅ RESETMONTH COMPLETADO');
+    }
+
+    // 🛠️ UTILIDADES DE DEBUGGING
+    resetAllData() {
+        localStorage.removeItem('idaconn_projects');
+        localStorage.removeItem('idaconn_expenses');
+        localStorage.removeItem('idaconn_reg_counter');
+        console.log('🗑️ Todos los datos del sistema han sido eliminados');
+        window.location.reload();
+    }
+
+    debugProjectsData() {
+        console.log('📊 Proyectos actuales:', this.projects);
+        console.log('💾 Proyectos en localStorage:', localStorage.getItem('idaconn_projects'));
+    }
+
+    // 👥 GESTIÓN DE USUARIOS
+    getPendingUsers() {
+        const requests = localStorage.getItem('idaconn_pending_users');
+        return requests ? JSON.parse(requests) : [];
+    }
+
+    savePendingUsers(requests) {
+        localStorage.setItem('idaconn_pending_users', JSON.stringify(requests));
+    }
+
+    addUserRequest(userData) {
+        const requests = this.getPendingUsers();
+        const newRequest = {
+            id: Date.now().toString(),
+            name: userData.name,
+            email: userData.email,
+            message: userData.message || '',
+            requestDate: new Date().toISOString(),
+            status: 'pending'
+        };
+        requests.push(newRequest);
+        this.savePendingUsers(requests);
+        return newRequest;
+    }
+
+    approveUserRequest(requestId, tempPassword) {
+        const requests = this.getPendingUsers();
+        const request = requests.find(r => r.id === requestId);
+        if (!request) return null;
+
+        // Cambiar estado a aprobado
+        request.status = 'approved';
+        request.approvedDate = new Date().toISOString();
+        request.tempPassword = tempPassword;
+
+        // Agregar a usuarios reales
+        const newUser = {
+            id: Date.now().toString(), // ID único para el usuario
+            name: request.name,
+            email: request.email,
+            role: 'user',
+            password: tempPassword,
+            createdDate: new Date().toISOString(),
+            isFirstLogin: true, // Flag para forzar cambio de contraseña
+            tempPassword: true  // Indica que es contraseña temporal
+        };
+
+        // ✅ AGREGAR EL USUARIO AL ARRAY DE USUARIOS
+        this.users.push(newUser);
+        this.saveUsers();
+        
+        console.log('✅ Usuario agregado a la lista:', newUser);
+        console.log('✅ Total de usuarios ahora:', this.users.length);
+
+        this.savePendingUsers(requests);
+        return { request, newUser };
+    }
+
+    rejectUserRequest(requestId, reason = '') {
+        const requests = this.getPendingUsers();
+        const request = requests.find(r => r.id === requestId);
+        if (!request) return null;
+
+        request.status = 'rejected';
+        request.rejectedDate = new Date().toISOString();
+        request.rejectionReason = reason;
+
+        this.savePendingUsers(requests);
+        return request;
+    }
+
+    // 🔑 Actualizar contraseña de usuario
+    updateUserPassword(userId, newPassword) {
+        const user = this.users.find(u => u.id === userId);
+        if (!user) return null;
+
+        // Actualizar contraseña y quitar flags de primer login
+        user.password = newPassword;
+        user.isFirstLogin = false;
+        user.tempPassword = false;
+        user.passwordChangedDate = new Date().toISOString();
+
+        // Guardar cambios
+        this.saveUsers();
+        
+        // Actualizar usuario en localStorage si es el actual
+        if (this.currentUser && this.currentUser.id === userId) {
+            this.currentUser = user;
+            localStorage.setItem('idaconn_current_user', JSON.stringify(user));
+        }
+
+        console.log('🔑 Contraseña actualizada para usuario:', user.name);
+        return user;
+    }
+
+    // 🔧 GESTIÓN COMPLETA DE USUARIOS
+    createUser(userData) {
+        const newUser = {
+            id: Date.now().toString(),
+            name: userData.name,
+            email: userData.email,
+            password: userData.password,
+            role: userData.role || 'user',
+            createdDate: new Date().toISOString()
+        };
+        
+        this.users.push(newUser);
+        this.saveUsers();
+        return newUser;
+    }
+
+    updateUser(userId, userData) {
+        const userIndex = this.users.findIndex(u => u.id === userId);
+        if (userIndex === -1) return null;
+
+        const updatedUser = {
+            ...this.users[userIndex],
+            ...userData,
+            updatedDate: new Date().toISOString()
+        };
+        
+        this.users[userIndex] = updatedUser;
+        this.saveUsers();
+        return updatedUser;
+    }
+
+    deleteUser(userId) {
+        const userIndex = this.users.findIndex(u => u.id === userId);
+        if (userIndex === -1) return false;
+
+        // No permitir eliminar el último admin
+        const user = this.users[userIndex];
+        if (user.role === 'admin') {
+            const adminCount = this.users.filter(u => u.role === 'admin').length;
+            if (adminCount <= 1) {
+                return { error: 'No se puede eliminar el último administrador' };
+            }
+        }
+
+        this.users.splice(userIndex, 1);
+        this.saveUsers();
+        return true;
+    }
+
+    getUserById(userId) {
+        return this.users.find(u => u.id === userId);
+    }
+}
+
+// ==========================================
+// 📧 CONFIGURACIÓN EMAILJS
+// ==========================================
+
+// CONFIGURACIÓN EMAILJS - CONFIGURADO Y LISTO
+const EMAIL_CONFIG = {
+    PUBLIC_KEY: 'gHJwWuHVFVhlE8hbm',  // Public Key activo
+    SERVICE_ID: 'service_ksu843l',     // Service ID Gmail configurado
+    TEMPLATES: {
+        APPROVAL: 'template_i0fb2nq',   // Template de aprobación ✅ FUNCIONA
+        REJECTION: 'template_l1l2r38',  // Template de rechazo ❌ NO LLENA CAMPOS
+        NEW_REQUEST: null               // Se usa notificación interna en la app
+    }
+};
+
+// Función auxiliar para enviar emails
+async function sendEmail(templateId, templateParams) {
+    console.log('🔍 DEBUG: sendEmail llamada con:', { templateId, templateParams });
+    console.log('🔍 DEBUG: EMAIL_CONFIG actual:', EMAIL_CONFIG);
+    console.log('🔍 DEBUG: EmailJS disponible:', typeof emailjs !== 'undefined');
+    
+    // Verificar si EmailJS está configurado
+    if (!EMAIL_CONFIG.PUBLIC_KEY || EMAIL_CONFIG.PUBLIC_KEY === 'TU_PUBLIC_KEY_AQUI') {
+        console.warn('⚠️ EmailJS no configurado, usando modo simulación');
+        return { success: false, mode: 'simulation' };
+    }
+
+    if (typeof emailjs === 'undefined') {
+        console.error('❌ EmailJS library no está cargada');
+        return { success: false, mode: 'error', error: 'EmailJS library not loaded' };
+    }
+
+    try {
+        // Inicializar EmailJS si no está inicializado
+        if (!emailjs._initialized) {
+            console.log('🔧 Inicializando EmailJS con PUBLIC_KEY:', EMAIL_CONFIG.PUBLIC_KEY);
+            emailjs.init(EMAIL_CONFIG.PUBLIC_KEY);
+            emailjs._initialized = true;
+        }
+
+        console.log('📧 Enviando email real con EmailJS...');
+        console.log('📧 Service ID:', EMAIL_CONFIG.SERVICE_ID);
+        console.log('📧 Template ID:', templateId);
+        console.log('📧 Parámetros:', templateParams);
+        
+        const response = await emailjs.send(
+            EMAIL_CONFIG.SERVICE_ID,
+            templateId,
+            templateParams
+        );
+        
+        console.log('✅ Email enviado exitosamente:', response);
+        return { success: true, mode: 'real', response };
+        
+    } catch (error) {
+        console.error('❌ Error enviando email:', error);
+        console.error('❌ Error detalles:', error.message);
+        console.error('❌ Error stack:', error.stack);
+        return { success: false, mode: 'error', error };
     }
 }
 
@@ -1001,17 +1643,19 @@ class ExpenseApp {
     initializeApp() {
         this.setupEventListeners();
         this.checkAutoLogin();
+        
+        // Inicializar badge de notificaciones para admin
+        const currentUser = this.dataManager.getCurrentUser();
+        if (currentUser && currentUser.role === 'admin') {
+            setTimeout(() => this.updatePendingRequestsBadge(), 500);
+        }
     }
 
     // 📱 Configurar event listeners
     setupEventListeners() {
         // Login
         document.getElementById('loginForm').addEventListener('submit', (e) => this.handleLogin(e));
-        document.getElementById('requestAccessBtn').addEventListener('click', () => this.showCustomConfirm(
-            'Solicitar Acceso',
-            'Contacta al administrador del sistema para obtener credenciales de acceso.',
-            () => {}
-        ));
+        document.getElementById('requestAccessBtn').addEventListener('click', () => this.showRequestAccessModal());
 
         // Dashboard
         document.getElementById('logoutBtn').addEventListener('click', () => this.handleLogout());
@@ -1023,9 +1667,9 @@ class ExpenseApp {
         document.getElementById('viewReportsBtn').addEventListener('click', () => this.showReportsModal());
 
         // Admin Actions
-        document.getElementById('manageProjectsBtn').addEventListener('click', () => this.showProjectsModal());
-        document.getElementById('manageUsersBtn').addEventListener('click', () => this.showUsersModal());
-        document.getElementById('manageBudgetsBtn').addEventListener('click', () => this.showBudgetsModal());
+        document.getElementById('manageProjectsBtn').addEventListener('click', () => this.toggleProjectsSection());
+        document.getElementById('manageRequestsBtn').addEventListener('click', () => this.toggleRequestsSection());
+        document.getElementById('manageUsersBtn').addEventListener('click', () => this.toggleUsersSection());
 
         // Expense Type Selection
         document.getElementById('typeFactura').addEventListener('click', () => this.selectExpenseType('factura'));
@@ -1048,18 +1692,41 @@ class ExpenseApp {
 
         // Reports Modal
         document.getElementById('closeReportsModal').addEventListener('click', () => this.hideReportsModal());
+        document.getElementById('exportReportBtn').addEventListener('click', () => this.exportReportData());
 
         // Projects Modal
         document.getElementById('closeProjectsModal').addEventListener('click', () => this.hideProjectsModal());
         document.getElementById('addProjectForm').addEventListener('submit', (e) => this.handleAddProject(e));
+
+        // Contribution Modal
+        document.getElementById('closeContributionModal').addEventListener('click', () => this.hideContributionModal());
+        document.getElementById('cancelContributionBtn').addEventListener('click', () => this.hideContributionModal());
+        document.getElementById('contributionForm').addEventListener('submit', (e) => this.handleContributionSubmit(e));
 
         // Users Modal
         document.getElementById('closeUsersModal').addEventListener('click', () => this.hideUsersModal());
         document.getElementById('addUserForm').addEventListener('submit', (e) => this.handleAddUser(e));
 
         // Confirmation Modal
-        document.getElementById('confirmNo').addEventListener('click', () => this.hideConfirmModal());
+        document.getElementById('confirmNo').addEventListener('click', () => this.cancelAction());
         document.getElementById('confirmYes').addEventListener('click', () => this.confirmAction());
+
+        // Request Access Modal
+        document.getElementById('cancelAccessRequestBtn').addEventListener('click', () => this.hideRequestAccessModal());
+        document.getElementById('accessRequestForm').addEventListener('submit', (e) => this.handleAccessRequest(e));
+
+        // Edit User Modal
+        document.getElementById('cancelEditUserBtn').addEventListener('click', () => this.hideEditUserModal());
+        document.getElementById('editUserForm').addEventListener('submit', (e) => this.handleEditUser(e));
+
+        // Alert Modal
+        document.getElementById('alertOkBtn').addEventListener('click', () => this.hideAlertModal());
+        
+        // Change Password Modal
+        document.getElementById('changePasswordForm').addEventListener('submit', (e) => this.handleChangePassword(e));
+        
+        // New Project Button (inline)
+        document.getElementById('addNewProjectBtn').addEventListener('click', () => this.showProjectsModal());
     }
 
     // 🔐 Verificar auto-login
@@ -1082,35 +1749,61 @@ class ExpenseApp {
         const user = this.dataManager.login(email, password);
         
         if (user) {
-            this.showDashboard(user);
+            // Verificar si es primer login y necesita cambiar contraseña
+            if (user.isFirstLogin || user.tempPassword) {
+                console.log('👤 Primer login detectado, solicitando cambio de contraseña');
+                this.showChangePasswordModal(user);
+            } else {
+                this.showDashboard(user);
+            }
         } else {
-            this.showCustomConfirm(
+            this.showAlert(
                 'Error de Acceso',
                 'Credenciales incorrectas. Por favor verifica tu email y contraseña.',
-                () => {}
+                'fas fa-exclamation-circle text-red-500'
             );
         }
     }
 
     handleLogout() {
         this.showCustomConfirm(
-            'Cerrar Sesión',
-            '¿Estás seguro de que quieres cerrar sesión?',
+            '🚪 Cerrar Sesión',
+            '¿Estás seguro de que quieres cerrar sesión?\n\nSe perderán todos los datos no guardados.',
             () => {
+                console.log('🚪 Ejecutando logout');
+                this.hideConfirmModal(); // Cerrar modal PRIMERO
                 this.dataManager.logout();
                 this.showLogin();
-            }
+            },
+            'Sí, Cerrar Sesión',
+            'Cancelar',
+            null
         );
     }
 
     // 🖥️ PANTALLAS
     showLogin() {
+        console.log('🔑 Mostrando pantalla de login');
+        
+        // Cerrar cualquier modal abierto
+        document.querySelectorAll('.modal.show').forEach(modal => {
+            modal.classList.remove('show');
+        });
+        
+        // Ocultar header y mostrar solo login
+        document.getElementById('appHeader').classList.add('hidden');
         document.getElementById('loginScreen').classList.remove('hidden');
         document.getElementById('dashboardScreen').classList.add('hidden');
         document.getElementById('loginEmail').focus();
+        
+        console.log('✅ Login mostrado, dashboard y header ocultos');
     }
 
     showDashboard(user) {
+        console.log('📊 Mostrando dashboard para:', user.name);
+        
+        // Mostrar header y dashboard, ocultar login
+        document.getElementById('appHeader').classList.remove('hidden');
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('dashboardScreen').classList.remove('hidden');
         
@@ -1119,14 +1812,155 @@ class ExpenseApp {
         
         // Show/hide admin functions
         const adminCard = document.getElementById('adminActionsCard');
+        const projectsCard = document.getElementById('projectsManagementCard');
+        const requestsCard = document.getElementById('requestsManagementCard');
+        const usersCard = document.getElementById('usersManagementCard');
+        
         if (user.role === 'admin') {
             adminCard.classList.remove('hidden');
+            // Las secciones se mostrarán solo al hacer clic en las tarjetas
+            projectsCard.classList.add('hidden');
+            requestsCard.classList.add('hidden');
+            usersCard.classList.add('hidden');
+            
+            // Configurar event listeners de admin SOLO una vez
+            this.setupAdminEventListeners();
         } else {
             adminCard.classList.add('hidden');
+            projectsCard.classList.add('hidden');
+            requestsCard.classList.add('hidden');
+            usersCard.classList.add('hidden');
         }
+        
+        console.log('✅ Dashboard y header mostrados, login oculto');
 
         // Load projects and initialize dashboard
         this.loadProjects();
+        
+        // Si es admin, actualizar badge de solicitudes pendientes
+        if (user.role === 'admin') {
+            setTimeout(() => this.updatePendingRequestsBadge(), 100);
+        }
+    }
+
+    setupAdminEventListeners() {
+        // Solo configurar si no se han configurado ya
+        if (this.adminListenersConfigured) return;
+        
+        console.log('🔧 Configurando event listeners de administración...');
+        
+        // Botón Proyectos
+        const projectsBtn = document.getElementById('manageProjectsBtn');
+        if (projectsBtn) {
+            projectsBtn.addEventListener('click', () => {
+                this.showAdminSection('projects');
+            });
+        }
+        
+        // Botón Solicitudes  
+        const requestsBtn = document.getElementById('manageRequestsBtn');
+        if (requestsBtn) {
+            requestsBtn.addEventListener('click', () => {
+                this.showAdminSection('requests');
+            });
+        }
+        
+        // Botón Usuarios
+        const usersBtn = document.getElementById('manageUsersBtn');
+        if (usersBtn) {
+            usersBtn.addEventListener('click', () => {
+                this.showAdminSection('users');
+            });
+        }
+        
+        // Botón agregar nuevo usuario
+        const addNewUserBtn = document.getElementById('addNewUserBtn');
+        if (addNewUserBtn) {
+            addNewUserBtn.addEventListener('click', () => {
+                this.showUsersModal();
+            });
+        }
+
+        // Botón agregar nuevo proyecto
+        const addNewProjectBtn = document.getElementById('addNewProjectBtn');
+        if (addNewProjectBtn) {
+            addNewProjectBtn.addEventListener('click', () => {
+                this.addNewProject();
+            });
+        }
+        
+        this.adminListenersConfigured = true;
+        console.log('✅ Event listeners de administración configurados');
+    }
+
+    showAdminSection(sectionName) {
+        console.log('🔄 Mostrando sección de administración:', sectionName);
+        
+        // Ocultar todas las secciones
+        document.getElementById('projectsManagementCard').classList.add('hidden');
+        document.getElementById('requestsManagementCard').classList.add('hidden');
+        document.getElementById('usersManagementCard').classList.add('hidden');
+        
+        // Remover efectos activos de todos los botones
+        this.removeActiveEffect([
+            document.getElementById('manageProjectsBtn'),
+            document.getElementById('manageRequestsBtn'),
+            document.getElementById('manageUsersBtn')
+        ]);
+        
+        // Mostrar la sección seleccionada
+        if (sectionName === 'projects') {
+            document.getElementById('projectsManagementCard').classList.remove('hidden');
+            this.addActiveEffect(document.getElementById('manageProjectsBtn'));
+            this.loadProjectsSection();
+        } else if (sectionName === 'requests') {
+            document.getElementById('requestsManagementCard').classList.remove('hidden');
+            this.addActiveEffect(document.getElementById('manageRequestsBtn'));
+            this.loadPendingRequestsSection();
+        } else if (sectionName === 'users') {
+            document.getElementById('usersManagementCard').classList.remove('hidden');
+            this.addActiveEffect(document.getElementById('manageUsersBtn'));
+            this.loadRegisteredUsers();
+        }
+    }
+
+    addNewProject() {
+        console.log('🏗️ Agregando nuevo proyecto');
+        
+        const name = prompt('¿Cuál es el nombre del nuevo proyecto?');
+        if (!name || name.trim() === '') return;
+        
+        const budget = prompt('¿Cuál es el presupuesto original del proyecto?');
+        if (!budget || isNaN(budget) || parseFloat(budget) <= 0) {
+            this.showCustomConfirm(
+                'Error',
+                'El presupuesto debe ser un número mayor a 0.',
+                () => {}
+            );
+            return;
+        }
+        
+        try {
+            const newProject = this.dataManager.addProject({
+                name: name.trim(),
+                budget: parseFloat(budget)
+            });
+            
+            this.loadProjectsSection(); // Recargar la sección
+            
+            this.showCustomConfirm(
+                'Proyecto Creado',
+                `El proyecto "${newProject.name}" ha sido creado con un presupuesto de $${parseFloat(budget).toLocaleString()}.`,
+                () => {}
+            );
+            
+        } catch (error) {
+            this.showCustomConfirm(
+                'Error',
+                error.message || 'No se pudo crear el proyecto.',
+                () => {}
+            );
+        }
     }
 
     // 📁 GESTIÓN DE PROYECTOS
@@ -1136,9 +1970,10 @@ class ExpenseApp {
         
         this.dataManager.projects.forEach(project => {
             if (project.active) {
+                const totalBudget = this.dataManager.getTotalBudget(project.id);
                 const option = document.createElement('option');
                 option.value = project.id;
-                option.textContent = `${project.name} (Presupuesto: $${project.budget.toLocaleString()})`;
+                option.textContent = `${project.name} (Presupuesto: $${totalBudget.toLocaleString()})`;
                 projectSelect.appendChild(option);
             }
         });
@@ -1164,30 +1999,67 @@ class ExpenseApp {
     updateBalance() {
         const project = this.dataManager.projects.find(p => p.id === this.selectedProjectId);
         if (project) {
-            const available = project.budget - project.spent;
+            const available = this.dataManager.getAvailableBudget(this.selectedProjectId);
             document.getElementById('currentBalance').textContent = `$${available.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
         }
     }
 
     loadRecentExpenses() {
         const expenses = this.dataManager.getProjectExpenses(this.selectedProjectId);
+        const project = this.dataManager.projects.find(p => p.id === this.selectedProjectId);
+        const contributions = project ? project.contributions : [];
         const recentContainer = document.getElementById('recentExpenses');
         
-        if (expenses.length === 0) {
-            recentContainer.innerHTML = '<p class="text-gray-500 text-center py-2">No hay gastos registrados</p>';
+        // Combinar gastos y aportaciones
+        const allTransactions = [];
+        
+        // Agregar gastos (negativos)
+        expenses.forEach(expense => {
+            allTransactions.push({
+                ...expense,
+                type: 'expense',
+                displayAmount: `-$${parseFloat(expense.amount).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
+                amountClass: 'text-red-600',
+                icon: 'fas fa-minus-circle'
+            });
+        });
+        
+        // Agregar aportaciones (positivas)
+        contributions.forEach(contribution => {
+            allTransactions.push({
+                ...contribution,
+                type: 'contribution',
+                displayAmount: `+$${parseFloat(contribution.amount).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
+                amountClass: 'text-green-600',
+                icon: 'fas fa-plus-circle',
+                category: 'Aportación'
+            });
+        });
+        
+        if (allTransactions.length === 0) {
+            recentContainer.innerHTML = '<p class="text-gray-500 text-center py-2">No hay movimientos registrados</p>';
             return;
         }
 
-        const recent = expenses.slice(-5).reverse();
-        recentContainer.innerHTML = recent.map(expense => `
+        // Ordenar por timestamp y tomar los últimos 5
+        const recent = allTransactions
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+            .slice(0, 5);
+            
+        recentContainer.innerHTML = recent.map(transaction => `
             <div class="bg-gray-50 p-3 rounded-lg border">
                 <div class="flex justify-between items-start">
                     <div>
-                        <div class="font-medium text-gray-800">$${parseFloat(expense.amount).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div>
-                        <div class="text-sm text-gray-600">${expense.description}</div>
-                        <div class="text-xs text-gray-500">${expense.category} • ${expense.date}</div>
+                        <div class="flex items-center gap-2">
+                            <i class="${transaction.icon} text-sm ${transaction.amountClass}"></i>
+                            <span class="font-medium ${transaction.amountClass}">${transaction.displayAmount}</span>
+                        </div>
+                        <div class="text-sm text-gray-600 mt-1">${transaction.description}</div>
+                        <div class="text-xs text-gray-500">${transaction.category} • ${transaction.date}</div>
                     </div>
-                    <div class="text-xs text-blue-600 font-mono">${expense.registrationNumber}</div>
+                    <div class="text-xs text-blue-600 font-mono">
+                        ${transaction.registrationNumber || 'APORTACIÓN'}
+                    </div>
                 </div>
             </div>
         `).join('');
@@ -1196,10 +2068,10 @@ class ExpenseApp {
     // 💰 GESTIÓN DE GASTOS
     showExpenseTypeModal() {
         if (!this.selectedProjectId) {
-            this.showCustomConfirm(
+            this.showAlert(
                 'Proyecto Requerido',
                 'Por favor selecciona un proyecto antes de registrar un gasto.',
-                () => {}
+                'fas fa-exclamation-triangle text-yellow-500'
             );
             return;
         }
@@ -1283,10 +2155,10 @@ class ExpenseApp {
             }
         } catch (error) {
             console.error('Error processing XML:', error);
-            this.showCustomConfirm(
+            this.showAlert(
                 'Error XML',
                 'No se pudo procesar el archivo XML. Verifica que sea un archivo CFDI válido.',
-                () => {}
+                'fas fa-file-alt text-red-500'
             );
         }
     }
@@ -1470,10 +2342,7 @@ class ExpenseApp {
         
         if (!this.selectedProjectId) return;
         
-        const project = this.dataManager.projects.find(p => p.id === this.selectedProjectId);
-        if (!project) return;
-        
-        const available = project.budget - project.spent;
+        const available = this.dataManager.getAvailableBudget(this.selectedProjectId);
         
         if (amount > available) {
             warning.classList.remove('hidden');
@@ -1540,9 +2409,19 @@ class ExpenseApp {
             this.loadRecentExpenses();
             
             this.showCustomConfirm(
-                'Gasto Registrado',
-                `Gasto guardado exitosamente.\nNúmero de registro: ${savedExpense.registrationNumber}`,
-                () => {}
+                '✅ Gasto Registrado',
+                '¿Deseas registrar otro gasto?',
+                () => {
+                    // SÍ - Registrar otro gasto
+                    this.showExpenseTypeModal();
+                },
+                'SÍ, registrar otro',
+                'NO, cerrar sesión',
+                () => {
+                    // NO - Cerrar sesión directamente
+                    this.dataManager.logout();
+                    this.showLogin();
+                }
             );
             
         } catch (error) {
@@ -1557,6 +2436,7 @@ class ExpenseApp {
 
     // 📊 EXPORTACIÓN DE DATOS
     async handleExport() {
+
         if (!this.selectedProjectId) {
             this.showCustomConfirm(
                 'Proyecto Requerido',
@@ -1566,44 +2446,29 @@ class ExpenseApp {
             return;
         }
 
-        try {
-            const exportBtn = document.getElementById('exportBtn');
-            const originalHTML = exportBtn.innerHTML;
-            
-            exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            exportBtn.disabled = true;
+        const project = this.dataManager.projects.find(p => p.id === this.selectedProjectId);
+        const currentMonth = new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+        
+        // Mostrar opciones SIN hacer nada automáticamente
+        this.showCustomConfirm(
+            '📊 Exportación de Datos',
+            `Selecciona la acción que deseas realizar:\n\n📁 DESCARGAR: Solo exporta los datos del proyecto "${project.name}" a CSV\n\n📅 CERRAR MES: Exporta datos + Archiva gastos de ${currentMonth} + Reinicia contadores\n\n⚠️ El cierre mensual afecta TODOS los proyectos y NO se puede deshacer.`,
+            () => {
+                // CERRAR MES
 
-            const result = await this.dataManager.exportData(this.selectedProjectId);
-            
-            this.showCustomConfirm(
-                'Exportación Completada',
-                `✅ Datos exportados exitosamente:\n\n• ${result.totalExpenses} gastos procesados\n• Total: $${result.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}\n• Archivo CSV generado\n• ${result.filesDownloaded} archivos descargados\n\nRevisa tu carpeta de descargas.`,
-                () => {}
-            );
-
-        } catch (error) {
-            console.error('Export error:', error);
-            this.showCustomConfirm(
-                'Error de Exportación',
-                error.message || 'No se pudo completar la exportación',
-                () => {}
-            );
-        } finally {
-            const exportBtn = document.getElementById('exportBtn');
-            exportBtn.innerHTML = '<i class="fas fa-download"></i>';
-            exportBtn.disabled = false;
-        }
+                this.checkAndPerformMonthlyClose();
+            },
+            'Cerrar Mes',
+            'Descargar',
+            () => {
+                // SOLO DESCARGAR
+                this.justDownloadCSV();
+            }
+        );
     }
 
     // 📋 MODALES ADMINISTRATIVOS
-    showProjectsModal() {
-        this.loadProjectsInModal();
-        document.getElementById('projectsModal').classList.add('show');
-    }
 
-    hideProjectsModal() {
-        document.getElementById('projectsModal').classList.remove('show');
-    }
 
     loadProjectsInModal() {
         const container = document.getElementById('currentProjects');
@@ -1615,20 +2480,29 @@ class ExpenseApp {
 
         container.innerHTML = this.dataManager.projects.map(project => {
             const expenses = this.dataManager.getProjectExpenses(project.id);
-            const available = project.budget - project.spent;
-            const percentage = (project.spent / project.budget) * 100;
+            const totalBudget = this.dataManager.getTotalBudget(project.id);
+            const available = this.dataManager.getAvailableBudget(project.id);
+            const percentage = totalBudget > 0 ? (project.spent / totalBudget) * 100 : 0;
+            const totalContributions = (project.contributions || []).reduce((sum, contrib) => sum + contrib.amount, 0);
             
             return `
                 <div class="bg-gray-50 p-4 rounded-lg border">
                     <div class="flex justify-between items-start mb-3">
                         <div>
                             <h4 class="font-bold text-lg">${project.name}</h4>
-                            <p class="text-sm text-gray-600">${expenses.length} gastos registrados</p>
+                            <p class="text-sm text-gray-600">${expenses.length} gastos • ${project.contributions.length} aportaciones</p>
                         </div>
-                        <button onclick="app.deleteProject('${project.id}')" 
-                                class="text-red-500 hover:text-red-700 p-1">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                        <div class="flex gap-2">
+                            <button onclick="app.showContributionModal('${project.id}')" 
+                                    class="text-green-500 hover:text-green-700 p-1" 
+                                    title="Agregar aportación">
+                                <i class="fas fa-plus-circle"></i>
+                            </button>
+                            <button onclick="app.deleteProject('${project.id}')" 
+                                    class="text-red-500 hover:text-red-700 p-1">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="mb-3">
@@ -1641,20 +2515,34 @@ class ExpenseApp {
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-3 gap-4 text-sm">
-                        <div>
-                            <label class="block text-gray-600">Presupuesto:</label>
-                            <input type="number" value="${project.budget}" 
-                                   onchange="app.updateProjectBudget('${project.id}', this.value)"
-                                   class="w-full px-2 py-1 border rounded text-sm">
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div class="space-y-2">
+                            <div>
+                                <label class="block text-gray-600">Presupuesto Original:</label>
+                                <div class="font-medium text-blue-600">$${project.originalBudget.toLocaleString()}</div>
+                            </div>
+                            <div>
+                                <label class="block text-gray-600">Aportaciones:</label>
+                                <div class="font-medium text-green-600">+$${totalContributions.toLocaleString()}</div>
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-gray-600">Gastado:</label>
-                            <div class="font-medium">$${project.spent.toLocaleString()}</div>
+                        <div class="space-y-2">
+                            <div>
+                                <label class="block text-gray-600">Total Presupuesto:</label>
+                                <div class="font-bold text-lg">$${totalBudget.toLocaleString()}</div>
+                            </div>
+                            <div>
+                                <label class="block text-gray-600">Disponible:</label>
+                                <div class="font-medium ${available >= 0 ? 'text-green-600' : 'text-red-600'}">
+                                    $${available.toLocaleString()}
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-gray-600">Disponible:</label>
-                            <div class="font-medium text-green-600">$${available.toLocaleString()}</div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <label class="block text-gray-600 text-sm">Gastado:</label>
+                        <div class="font-medium text-red-600">-$${project.spent.toLocaleString()}</div>
                         </div>
                     </div>
                 </div>
@@ -1674,6 +2562,7 @@ class ExpenseApp {
             this.dataManager.addProject(projectData);
             this.loadProjects(); // Reload project selector
             this.loadProjectsInModal(); // Reload modal
+            this.loadProjectsSection(); // Reload inline section
             
             // Reset form
             e.target.reset();
@@ -1688,7 +2577,7 @@ class ExpenseApp {
             console.error('Error creating project:', error);
             this.showCustomConfirm(
                 'Error',
-                'No se pudo crear el proyecto',
+                error.message || 'No se pudo crear el proyecto',
                 () => {}
             );
         }
@@ -1715,18 +2604,72 @@ class ExpenseApp {
         );
     }
 
-    updateProjectBudget(projectId, newBudget) {
-        this.dataManager.updateProjectBudget(projectId, newBudget);
-        this.loadProjectsInModal();
-        if (this.selectedProjectId === projectId) {
-            this.updateBalance();
+    // 💰 GESTIÓN DE APORTACIONES
+    showContributionModal(projectId) {
+        this.selectedProjectForContribution = projectId;
+        document.getElementById('contributionDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('contributionForm').reset();
+        document.getElementById('contributionDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('contributionModal').classList.add('show');
+    }
+
+    hideContributionModal() {
+        document.getElementById('contributionModal').classList.remove('show');
+        this.selectedProjectForContribution = null;
+    }
+
+    async handleContributionSubmit(e) {
+        e.preventDefault();
+        
+        try {
+            const contributionData = {
+                date: document.getElementById('contributionDate').value,
+                amount: document.getElementById('contributionAmount').value,
+                description: document.getElementById('contributionDescription').value
+            };
+
+            // Validate required fields
+            if (!contributionData.date || !contributionData.amount || !contributionData.description) {
+                throw new Error('Por favor completa todos los campos requeridos');
+            }
+
+            // Save contribution
+            const savedContribution = this.dataManager.addContribution(this.selectedProjectForContribution, contributionData);
+            
+            // Update UI
+            this.hideContributionModal();
+            this.loadProjects(); // Reload project selector
+            this.loadProjectsInModal(); // Reload modal
+            this.loadProjectsSection(); // Reload inline section
+            if (this.selectedProjectId === this.selectedProjectForContribution) {
+                this.updateBalance();
+                this.loadRecentExpenses();
+            }
+            
+            this.showCustomConfirm(
+                '✅ Aportación Registrada',
+                `Aportación de $${parseFloat(contributionData.amount).toLocaleString('es-MX', { minimumFractionDigits: 2 })} registrada exitosamente.`,
+                () => {}
+            );
+            
+        } catch (error) {
+            console.error('Error saving contribution:', error);
+            this.showCustomConfirm(
+                'Error',
+                error.message || 'No se pudo guardar la aportación',
+                () => {}
+            );
         }
     }
 
     // 👥 GESTIÓN DE USUARIOS
     showUsersModal() {
         this.loadUsersInModal();
+        this.loadPendingUsers(); // Cargar también solicitudes pendientes
         document.getElementById('usersModal').classList.add('show');
+        
+        // Limpiar badge al abrir el modal
+        this.updatePendingRequestsBadge();
     }
 
     hideUsersModal() {
@@ -1734,26 +2677,514 @@ class ExpenseApp {
     }
 
     loadUsersInModal() {
-        const container = document.getElementById('currentUsers');
+        console.log('👥 DEBUG: loadUsersInModal() iniciando');
         
-        container.innerHTML = this.dataManager.users.map(user => `
-            <div class="bg-gray-50 p-4 rounded-lg border">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h4 class="font-bold">${user.name}</h4>
-                        <p class="text-sm text-gray-600">${user.email}</p>
-                        <span class="inline-block px-2 py-1 text-xs rounded ${user.role === 'admin' ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'}">
-                            ${user.role === 'admin' ? '👑 Administrador' : '👤 Usuario'}
-                        </span>
+        const container = document.getElementById('currentUsers');
+        console.log('👥 DEBUG: Container encontrado:', !!container);
+        
+        const users = this.dataManager.users;
+        console.log('👥 DEBUG: Usuarios en dataManager:', users);
+        console.log('👥 DEBUG: Cantidad de usuarios:', users.length);
+        
+        const adminCount = users.filter(u => u.role === 'admin').length;
+        console.log('👥 DEBUG: Cantidad de admins:', adminCount);
+        
+        if (!container) {
+            console.error('❌ ERROR: No se encontró el contenedor #currentUsers');
+            return;
+        }
+        
+        if (users.length === 0) {
+            console.log('👥 DEBUG: No hay usuarios, mostrando mensaje vacío');
+            container.innerHTML = `
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-users text-3xl mb-3"></i>
+                    <p>No hay usuarios registrados</p>
+                </div>
+            `;
+            return;
+        }
+
+        console.log('👥 DEBUG: Generando HTML para usuarios...');
+        
+        const html = users.map(user => `
+            <div class="bg-white p-4 rounded-lg border shadow-sm">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-2">
+                            <h4 class="font-bold text-gray-800">${user.name}</h4>
+                            <span class="inline-block px-2 py-1 text-xs rounded-full ${user.role === 'admin' ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'}">
+                                ${user.role === 'admin' ? '👑 Admin' : '👤 Usuario'}
+                            </span>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-1">📧 ${user.email}</p>
+                        <p class="text-xs text-gray-500">
+                            ${user.createdDate ? '📅 Creado: ' + new Date(user.createdDate).toLocaleDateString('es-ES') : 'Usuario del sistema'}
+                        </p>
                     </div>
-                    <button onclick="app.deleteUser('${user.id}')" 
-                            class="text-red-500 hover:text-red-700 p-2"
-                            ${user.role === 'admin' && this.dataManager.users.filter(u => u.role === 'admin').length === 1 ? 'disabled' : ''}>
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    <div class="flex gap-2 ml-4">
+                        <button onclick="app.editUser('${user.id}')" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                                title="Editar usuario">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="app.confirmDeleteUser('${user.id}')" 
+                                class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm ${user.role === 'admin' && adminCount <= 1 ? 'opacity-50 cursor-not-allowed' : ''}"
+                                ${user.role === 'admin' && adminCount <= 1 ? 'disabled' : ''}
+                                title="${user.role === 'admin' && adminCount <= 1 ? 'No se puede eliminar el último admin' : 'Eliminar usuario'}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         `).join('');
+        
+        console.log('👥 DEBUG: HTML generado:', html.substring(0, 200) + '...');
+        container.innerHTML = html;
+        console.log('👥 DEBUG: HTML asignado al container');
+    }
+
+    // 👥 NUEVA FUNCIÓN: Cargar usuarios registrados directamente en la interfaz
+    loadRegisteredUsers() {
+        console.log('👥 Cargando usuarios registrados en sección dedicada');
+        
+        const container = document.getElementById('registeredUsersContainer');
+        const counter = document.getElementById('usersCount');
+        
+        if (!container) {
+            console.error('❌ No se encontró #registeredUsersContainer');
+            return;
+        }
+        
+        const users = this.dataManager.users;
+        const adminCount = users.filter(u => u.role === 'admin').length;
+        
+        // Actualizar contador
+        if (counter) {
+            counter.textContent = `${users.length} usuario${users.length !== 1 ? 's' : ''}`;
+            counter.className = 'bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-semibold';
+        }
+        
+        if (users.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-users text-3xl mb-3"></i>
+                    <p class="font-medium">No hay usuarios registrados</p>
+                    <p class="text-sm">Agrega usuarios con el botón verde</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = users.map(user => `
+            <div class="bg-gradient-to-r from-gray-50 to-blue-50 p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-2">
+                            <h4 class="font-bold text-gray-800">${user.name}</h4>
+                            <span class="inline-block px-3 py-1 text-xs rounded-full font-semibold ${user.role === 'admin' ? 'bg-orange-100 text-orange-700 border border-orange-200' : 'bg-blue-100 text-blue-700 border border-blue-200'}">
+                                ${user.role === 'admin' ? '👑 Administrador' : '👤 Usuario'}
+                            </span>
+                            ${user.isFirstLogin ? '<span class="bg-yellow-100 text-yellow-700 px-2 py-1 text-xs rounded-full font-semibold">🔑 Primer Login</span>' : ''}
+                        </div>
+                        <p class="text-sm text-gray-700 mb-1">📧 ${user.email}</p>
+                        <div class="flex items-center gap-4 text-xs text-gray-500">
+                            ${user.createdDate ? `<span>📅 ${new Date(user.createdDate).toLocaleDateString('es-ES')}</span>` : '<span>👤 Usuario del sistema</span>'}
+                            ${user.passwordChangedDate ? `<span>🔑 ${new Date(user.passwordChangedDate).toLocaleDateString('es-ES')}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="app.editUser('${user.id}')" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
+                                title="Editar usuario">
+                            <i class="fas fa-edit mr-1"></i>Editar
+                        </button>
+                        <button onclick="app.confirmDeleteUser('${user.id}')" 
+                                class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm ${user.role === 'admin' && adminCount <= 1 ? 'opacity-50 cursor-not-allowed' : ''}"
+                                ${user.role === 'admin' && adminCount <= 1 ? 'disabled' : ''}
+                                title="${user.role === 'admin' && adminCount <= 1 ? 'No se puede eliminar el último admin' : 'Eliminar usuario'}">
+                            <i class="fas fa-trash mr-1"></i>Borrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        console.log(`👥 ${users.length} usuarios cargados en sección dedicada`);
+    }
+
+
+
+
+
+    // 🎨 EFECTOS 3D PARA TARJETAS ACTIVAS
+    addActiveEffect(button) {
+        if (!button) return;
+        
+        // Agregar efectos 3D y animaciones
+        button.classList.add('transform', 'scale-105', 'shadow-2xl', 'ring-4', 'ring-white', 'ring-opacity-50');
+        button.style.transform = 'translateY(-2px) scale(1.05)';
+        button.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
+        button.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 100%)';
+        button.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+        
+        console.log('🎨 Efecto 3D activado para:', button.id);
+    }
+
+    removeActiveEffect(buttons) {
+        buttons.forEach(button => {
+            if (!button) return;
+            
+            // Remover efectos 3D
+            button.classList.remove('transform', 'scale-105', 'shadow-2xl', 'ring-4', 'ring-white', 'ring-opacity-50');
+            button.style.transform = '';
+            button.style.boxShadow = '';
+            button.style.background = '';
+            
+            console.log('🎨 Efecto 3D removido de:', button.id);
+        });
+    }
+
+    toggleProjectsSection() {
+        const projectsCard = document.getElementById('projectsManagementCard');
+        const requestsCard = document.getElementById('requestsManagementCard');
+        const usersCard = document.getElementById('usersManagementCard');
+        const projectsBtn = document.getElementById('manageProjectsBtn');
+        const requestsBtn = document.getElementById('manageRequestsBtn');
+        const usersBtn = document.getElementById('manageUsersBtn');
+        
+        // Ocultar otras secciones
+        requestsCard.classList.add('hidden');
+        usersCard.classList.add('hidden');
+        this.removeActiveEffect([requestsBtn, usersBtn]);
+        
+        if (projectsCard.classList.contains('hidden')) {
+            projectsCard.classList.remove('hidden');
+            this.addActiveEffect(projectsBtn);
+            this.loadProjectsSection();
+        } else {
+            projectsCard.classList.add('hidden');
+            this.removeActiveEffect([projectsBtn]);
+        }
+    }
+
+    // 📋 CARGAR PROYECTOS CON LAYOUT FINANCIERO COMPLETO
+    loadProjectsSection() {
+        console.log('📋 Cargando proyectos en sección dedicada');
+        
+        const container = document.getElementById('registeredProjectsContainer');
+        const counter = document.getElementById('projectsCount');
+        
+        if (!container) {
+            console.error('❌ No se encontró #registeredProjectsContainer');
+            return;
+        }
+        
+        const projects = this.dataManager.projects;
+        
+        // Actualizar contador
+        if (counter) {
+            counter.textContent = `${projects.length} proyecto${projects.length !== 1 ? 's' : ''}`;
+            counter.className = 'bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-semibold';
+        }
+        
+        if (projects.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-project-diagram text-3xl mb-3"></i>
+                    <p class="font-medium">No hay proyectos registrados</p>
+                    <p class="text-sm">Agrega proyectos con el botón verde</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = projects.map(project => {
+            const totalExpenses = this.dataManager.getTotalExpensesByProject(project.id);
+            const totalBudget = this.dataManager.getTotalBudget(project.id);
+            const originalBudget = project.originalBudget || 0;
+            const contributions = project.contributions || [];
+            const totalContributions = contributions.reduce((sum, c) => sum + parseFloat(c.amount || 0), 0);
+            const available = totalBudget - totalExpenses;
+            const usedPercentage = totalBudget > 0 ? Math.round((totalExpenses / totalBudget) * 100) : 0;
+            
+            const expenseCount = this.dataManager.getProjectExpenses(project.id).length;
+            const contributionCount = contributions.length;
+            
+            const progressClass = usedPercentage > 90 ? 'bg-red-500' : usedPercentage > 70 ? 'bg-orange-500' : 'bg-green-500';
+            
+            return `
+                <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 10px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <!-- Encabezado: Título y botones -->
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h3 class="text-xl font-bold text-black">${project.name}</h3>
+                            <p class="text-gray-500 text-sm">${expenseCount} gastos • ${contributionCount} aportaciones</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="addContribution('${project.id}')" 
+                                    class="w-8 h-8 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center transition-colors"
+                                    title="Agregar aportación">
+                                <i class="fas fa-plus text-xs"></i>
+                            </button>
+                            <button onclick="deleteProject('${project.id}')" 
+                                    class="w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors"
+                                    title="Eliminar proyecto">
+                                <i class="fas fa-trash text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Barra de progreso -->
+                    <div class="mb-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-black">Presupuesto usado</span>
+                            <span class="text-black font-bold">${usedPercentage.toFixed(1)}%</span>
+                        </div>
+                        <div class="w-full h-2 bg-gray-200 rounded-full">
+                            <div class="h-2 rounded-full ${progressClass}" 
+                                 style="width: ${Math.min(usedPercentage, 100)}%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Layout vertical como en la imagen -->
+                    <div class="space-y-3">
+                        <!-- Presupuesto Original -->
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">Presupuesto Original:</span>
+                            <span class="text-blue-600 font-bold text-lg">$${originalBudget.toLocaleString()}</span>
+                        </div>
+                        
+                        <!-- Total Presupuesto -->
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">Total Presupuesto:</span>
+                            <span class="text-black font-bold text-xl">$${totalBudget.toLocaleString()}</span>
+                        </div>
+                        
+                        <!-- Aportaciones -->
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">Aportaciones:</span>
+                            <span class="text-green-600 font-bold text-lg">+$${totalContributions.toLocaleString()}</span>
+                        </div>
+                        
+                        <!-- Disponible -->
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">Disponible:</span>
+                            <span class="text-green-600 font-bold text-lg">$${available.toLocaleString()}</span>
+                        </div>
+                        
+                        <!-- Gastado -->
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">Gastado:</span>
+                            <span class="text-red-600 font-bold text-lg">-$${totalExpenses.toLocaleString()}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        console.log(`📋 ${projects.length} proyectos cargados en sección dedicada`);
+    }
+
+    // 📋 CARGAR SOLICITUDES PENDIENTES
+    loadPendingRequestsSection() {
+        console.log('📋 Cargando solicitudes pendientes en sección dedicada');
+        
+        const container = document.getElementById('pendingRequestsContainer');
+        const counter = document.getElementById('requestsCount');
+        
+        if (!container) {
+            console.error('❌ No se encontró #pendingRequestsContainer');
+            return;
+        }
+        
+        const pendingUsers = this.dataManager.getPendingUsers();
+        
+        // Actualizar contador
+        if (counter) {
+            counter.textContent = `${pendingUsers.length} pendiente${pendingUsers.length !== 1 ? 's' : ''}`;
+            counter.className = pendingUsers.length > 0 
+                ? 'bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-semibold'
+                : 'bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-semibold';
+        }
+        
+        if (pendingUsers.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-inbox text-3xl mb-3"></i>
+                    <p class="font-medium">No hay solicitudes pendientes</p>
+                    <p class="text-sm">Las nuevas solicitudes aparecerán aquí</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = pendingUsers.map(request => `
+            <div class="bg-gradient-to-r from-orange-50 to-yellow-50 border-2 border-orange-200 rounded-lg p-4 shadow-sm">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-2">
+                            <h4 class="font-bold text-gray-800">${request.name}</h4>
+                            <span class="bg-orange-100 text-orange-700 px-2 py-1 text-xs rounded-full font-semibold">
+                                ⏳ Pendiente
+                            </span>
+                        </div>
+                        <p class="text-sm text-gray-700 mb-1">📧 ${request.email}</p>
+                        <p class="text-sm text-gray-600 mb-2">💬 ${request.message || 'Sin mensaje'}</p>
+                        <p class="text-xs text-gray-500">
+                            📅 Solicitado: ${new Date(request.requestDate).toLocaleDateString('es-ES')}
+                        </p>
+                    </div>
+                    <div class="flex gap-2 ml-4">
+                        <button onclick="approveUser('${request.id}')" 
+                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                                title="Aprobar solicitud">
+                            <i class="fas fa-check mr-1"></i>Aprobar
+                        </button>
+                        <button onclick="rejectUser('${request.id}')" 
+                                class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                                title="Rechazar solicitud">
+                            <i class="fas fa-times mr-1"></i>Rechazar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        console.log(`📋 ${pendingUsers.length} solicitudes pendientes cargadas`);
+    }
+
+    // 📋 CARGAR SOLICITUDES EN SU SECCIÓN DEDICADA
+    loadPendingRequestsSection() {
+        console.log('📋 Cargando solicitudes pendientes en sección dedicada');
+        
+        const container = document.getElementById('pendingRequestsContainer');
+        const counter = document.getElementById('requestsCount');
+        
+        if (!container) {
+            console.error('❌ No se encontró #pendingRequestsContainer');
+            return;
+        }
+        
+        const pendingUsers = this.dataManager.getPendingUsers().filter(u => u.status === 'pending');
+        
+        // Actualizar contador
+        if (counter) {
+            counter.textContent = `${pendingUsers.length} pendiente${pendingUsers.length !== 1 ? 's' : ''}`;
+            counter.className = pendingUsers.length > 0 
+                ? 'bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-semibold animate-pulse'
+                : 'bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-semibold';
+        }
+        
+        if (pendingUsers.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-inbox text-3xl mb-3"></i>
+                    <p class="font-medium">No hay solicitudes pendientes</p>
+                    <p class="text-sm">Las nuevas solicitudes aparecerán aquí</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = pendingUsers.map(request => `
+            <div class="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-lg border-l-4 border-orange-400 shadow-sm">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-2">
+                            <h4 class="font-bold text-gray-800">${request.name}</h4>
+                            <span class="bg-orange-100 text-orange-700 px-2 py-1 text-xs rounded-full font-semibold">
+                                📅 ${new Date(request.requestDate).toLocaleDateString('es-ES')}
+                            </span>
+                        </div>
+                        <p class="text-sm text-gray-700 mb-2">📧 ${request.email}</p>
+                        ${request.message ? `<div class="bg-white bg-opacity-70 p-2 rounded text-sm text-gray-700 italic border-l-2 border-orange-300">
+                            "${request.message}"
+                        </div>` : ''}
+                    </div>
+                    <div class="flex gap-2 ml-4">
+                        <button onclick="app.approveUserRequest('${request.id}')" 
+                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
+                                title="Aprobar solicitud">
+                            <i class="fas fa-check mr-1"></i>Aprobar
+                        </button>
+                        <button class="reject-user-btn bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm" 
+                                data-request-id="${request.id}"
+                                title="Rechazar solicitud">
+                            <i class="fas fa-times mr-1"></i>Rechazar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        // Agregar event listeners para botones de rechazo
+        const rejectButtons = container.querySelectorAll('.reject-user-btn');
+        rejectButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                const requestId = e.target.closest('.reject-user-btn').getAttribute('data-request-id');
+                this.promptAndRejectUser(requestId);
+            });
+        });
+        
+        console.log(`📋 ${pendingUsers.length} solicitudes cargadas en sección dedicada`);
+    }
+
+    loadPendingUsers() {
+        const container = document.getElementById('pendingRequests');
+        const pendingUsers = this.dataManager.getPendingUsers().filter(u => u.status === 'pending');
+        
+        if (pendingUsers.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-inbox text-3xl mb-3"></i>
+                    <p>No hay solicitudes pendientes</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = pendingUsers.map(request => `
+            <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <h4 class="font-bold text-gray-800">${request.name}</h4>
+                        <p class="text-sm text-gray-600">${request.email}</p>
+                        <p class="text-xs text-gray-500 mt-1">
+                            Solicitado: ${new Date(request.requestDate).toLocaleDateString('es-ES')}
+                        </p>
+                        ${request.message ? `<p class="text-sm text-gray-700 mt-2 italic">"${request.message}"</p>` : ''}
+                    </div>
+                    <div class="flex gap-2 ml-4">
+                        <button onclick="app.approveUserRequest('${request.id}')" 
+                                class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">
+                            <i class="fas fa-check mr-1"></i>Aprobar
+                        </button>
+                        <button class="reject-user-btn bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm" 
+                                data-request-id="${request.id}">
+                            <i class="fas fa-times mr-1"></i>Rechazar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        // Actualizar contador de notificaciones
+        localStorage.setItem('idaconn_pending_notifications', pendingUsers.length.toString());
+        this.updatePendingRequestsBadge();
+        
+        // Agregar event listeners para botones de rechazo
+        const rejectButtons = document.querySelectorAll('.reject-user-btn');
+        rejectButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const requestId = e.target.closest('.reject-user-btn').getAttribute('data-request-id');
+                console.log('🚫 DEBUG: Botón rechazar clickeado para ID:', requestId);
+                this.promptAndRejectUser(requestId);
+            });
+        });
     }
 
     async handleAddUser(e) {
@@ -1829,25 +3260,501 @@ class ExpenseApp {
             return;
         }
         
-        this.loadReports();
+        // Mostrar modal
         document.getElementById('reportsModal').classList.add('show');
+        
+        // Generar reporte automáticamente
+        this.generateAutoReport();
     }
 
     hideReportsModal() {
         document.getElementById('reportsModal').classList.remove('show');
     }
 
-    loadReports() {
-        // Implementation for reports would go here
-        // This is a placeholder for the reports functionality
+    generateAutoReport() {
+        // Obtener información del proyecto seleccionado
+        const project = this.dataManager.projects.find(p => p.id === this.selectedProjectId);
+        const totalBudget = this.dataManager.getTotalBudget(this.selectedProjectId);
+        const available = this.dataManager.getAvailableBudget(this.selectedProjectId);
+        
+        // Actualizar información del proyecto en el modal
+        document.getElementById('reportProjectName').textContent = `📁 ${project.name}`;
+        document.getElementById('reportProjectInfo').textContent = `Presupuesto: $${totalBudget.toLocaleString()} | Disponible: $${available.toLocaleString()}`;
+        
+        // Obtener datos del proyecto seleccionado
+        const reportData = this.getReportData(this.selectedProjectId);
+        
+        // Mostrar estadísticas
+        this.displayReportSummary(reportData);
+        
+        // Generar gráficos
+        this.generateCharts(reportData);
+        
+        // Mostrar tabla de detalle
+        this.displayReportTable(reportData);
+        
+        // Mostrar todas las secciones
+        document.getElementById('reportSummary').classList.remove('hidden');
+        document.getElementById('reportCharts').classList.remove('hidden');
+        document.getElementById('reportData').classList.remove('hidden');
     }
 
-    showBudgetsModal() {
+    getReportData(projectId = '') {
+        let expenses = [];
+        let contributions = [];
+        let projectName = 'Todos los proyectos';
+        
+        if (projectId) {
+            // Datos de un proyecto específico
+            expenses = this.dataManager.getProjectExpenses(projectId);
+            const project = this.dataManager.projects.find(p => p.id === projectId);
+            contributions = project ? project.contributions : [];
+            projectName = project ? project.name : 'Proyecto no encontrado';
+        } else {
+            // Datos de todos los proyectos
+            expenses = this.dataManager.expenses;
+            this.dataManager.projects.forEach(project => {
+                if (project.contributions) {
+                    contributions = contributions.concat(project.contributions);
+                }
+            });
+        }
+        
+        return { expenses, contributions, projectId, projectName };
+    }
+
+    displayReportSummary(reportData) {
+        const { expenses, contributions } = reportData;
+        
+        // Cálculos
+        const totalExpenses = expenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
+        const totalContributions = contributions.reduce((sum, cont) => sum + parseFloat(cont.amount), 0);
+        const netBalance = totalContributions - totalExpenses;
+        const avgExpense = expenses.length > 0 ? totalExpenses / expenses.length : 0;
+        const totalMovements = expenses.length + contributions.length;
+        
+        // Actualizar elementos
+        document.getElementById('totalExpenses').textContent = `$${totalExpenses.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+        document.getElementById('expenseCount').textContent = `${expenses.length} gastos`;
+        
+        document.getElementById('totalContributions').textContent = `$${totalContributions.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+        document.getElementById('contributionCount').textContent = `${contributions.length} aportaciones`;
+        
+        document.getElementById('netBalance').textContent = `$${netBalance.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+        document.getElementById('balanceStatus').textContent = netBalance >= 0 ? 'Superávit' : 'Déficit';
+        
+        document.getElementById('avgExpense').textContent = `$${avgExpense.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+        document.getElementById('totalMovements').textContent = `${totalMovements} movimientos`;
+    }
+
+    generateCharts(reportData) {
+        const { expenses, contributions } = reportData;
+        
+        // Limpiar gráficos existentes
+        this.destroyExistingCharts();
+        
+        // Gráfico de gastos por categoría
+        this.createCategoryChart(expenses);
+    }
+
+    destroyExistingCharts() {
+        try {
+            if (this.categoryChart && typeof this.categoryChart.destroy === 'function') {
+                this.categoryChart.destroy();
+                this.categoryChart = null;
+            }
+        } catch (error) {
+            console.warn('Error destroying charts:', error);
+        }
+    }
+
+    createCategoryChart(expenses) {
+        const ctx = document.getElementById('categoryChart').getContext('2d');
+        
+        // Validar que hay gastos
+        if (!expenses || expenses.length === 0) {
+            this.categoryChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Sin gastos'],
+                    datasets: [{
+                        data: [1],
+                        backgroundColor: ['#E5E7EB'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            enabled: false
+                        }
+                    }
+                }
+            });
+            return;
+        }
+        
+        // Agrupar por categoría con validación
+        const categoryData = {};
+        expenses.forEach(expense => {
+            if (expense.amount && !isNaN(parseFloat(expense.amount))) {
+                const category = expense.category || 'Sin categoría';
+                const amount = parseFloat(expense.amount);
+                if (amount > 0) {
+                    categoryData[category] = (categoryData[category] || 0) + amount;
+                }
+            }
+        });
+        
+        const labels = Object.keys(categoryData);
+        const data = Object.values(categoryData);
+        
+        // Si no hay datos válidos
+        if (labels.length === 0 || data.every(val => val === 0)) {
+            this.createCategoryChart([]); // Recursión para mostrar gráfico vacío
+            return;
+        }
+        
+        const colors = ['#EF4444', '#F97316', '#EAB308', '#22C55E', '#3B82F6', '#8B5CF6', '#EC4899', '#6B7280'];
+        
+        this.categoryChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: colors.slice(0, labels.length),
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                const value = context.parsed;
+                                const total = data.reduce((sum, val) => sum + val, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return `${context.label}: $${value.toLocaleString('es-MX', { minimumFractionDigits: 2 })} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    displayReportTable(reportData) {
+        const { expenses, contributions } = reportData;
+        const tbody = document.getElementById('reportTableBody');
+        
+        // Combinar y ordenar todos los movimientos
+        const allMovements = [];
+        
+        expenses.forEach(expense => {
+            allMovements.push({
+                ...expense,
+                type: 'gasto',
+                displayAmount: `-$${parseFloat(expense.amount).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
+                amountClass: 'text-red-600'
+            });
+        });
+        
+        contributions.forEach(contribution => {
+            allMovements.push({
+                ...contribution,
+                type: 'aportación',
+                category: 'Aportación',
+                displayAmount: `+$${parseFloat(contribution.amount).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
+                amountClass: 'text-green-600'
+            });
+        });
+        
+        // Ordenar por fecha descendente
+        allMovements.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        tbody.innerHTML = allMovements.map(movement => `
+            <tr class="hover:bg-gray-50">
+                <td class="border border-gray-300 px-4 py-2">
+                    <span class="inline-block px-2 py-1 text-xs rounded ${movement.type === 'gasto' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}">
+                        ${movement.type.toUpperCase()}
+                    </span>
+                </td>
+                <td class="border border-gray-300 px-4 py-2">${movement.date}</td>
+                <td class="border border-gray-300 px-4 py-2">${movement.description}</td>
+                <td class="border border-gray-300 px-4 py-2">${movement.category}</td>
+                <td class="border border-gray-300 px-4 py-2 text-right font-medium ${movement.amountClass}">
+                    ${movement.displayAmount}
+                </td>
+                <td class="border border-gray-300 px-4 py-2">${movement.userName}</td>
+            </tr>
+        `).join('');
+    }
+
+    exportReportData() {
+
+        const project = this.dataManager.projects.find(p => p.id === this.selectedProjectId);
+        const currentMonth = new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+        
+        // SOLO mostrar el modal, SIN hacer nada más
         this.showCustomConfirm(
-            'Función Disponible',
-            'La gestión detallada de presupuestos está disponible en la sección de proyectos.',
-            () => this.showProjectsModal()
+            '📊 Exportación de Datos',
+            `Selecciona la acción que deseas realizar:\n\n📁 DESCARGAR: Solo exporta los datos del proyecto "${project.name}" a CSV\n\n📅 CERRAR MES: Exporta datos + Archiva gastos de ${currentMonth} + Reinicia contadores\n\n⚠️ El cierre mensual afecta TODOS los proyectos y NO se puede deshacer.`,
+            () => {
+                // CERRAR MES
+
+                this.checkAndPerformMonthlyClose();
+            },
+            'Cerrar Mes',
+            'Descargar',
+            () => {
+                // DESCARGAR
+                this.justDownloadCSV();
+            }
         );
+    }
+    
+    justDownloadCSV() {
+        console.log('💾 Ejecutando descarga simple de CSV');
+        const project = this.dataManager.projects.find(p => p.id === this.selectedProjectId);
+        if (!project) {
+            console.error('❌ No se encontró proyecto para descargar');
+            this.hideConfirmModal();
+            return;
+        }
+        
+        const reportData = this.getReportData(this.selectedProjectId);
+        const csvContent = this.generateReportCSV(reportData);
+        const fileName = `IDACONN_${project.name.replace(/\s/g, '_')}_${new Date().toISOString().substring(0, 10)}.csv`;
+        
+        console.log('📁 Descargando archivo:', fileName);
+        
+        // Verificar si la función existe antes de llamarla
+        if (typeof this.downloadCSV === 'function') {
+            this.downloadCSV(csvContent, fileName);
+        } else {
+            console.error('❌ downloadCSV no es una función en justDownloadCSV');
+            // Crear descarga manual
+            const BOM = '\uFEFF';
+            const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            console.log('✅ Descarga manual completada en justDownloadCSV');
+        }
+        
+        // Cerrar el modal después de iniciar la descarga
+        this.hideConfirmModal();
+    }
+
+    generateReportCSV(reportData) {
+        const { expenses, contributions } = reportData;
+        
+        // Combinar movimientos
+        const allMovements = [];
+        
+        expenses.forEach(expense => {
+            allMovements.push({
+                tipo: 'GASTO',
+                fecha: expense.date,
+                concepto: expense.description,
+                categoria: expense.category,
+                monto: `-${expense.amount}`,
+                usuario: expense.userName,
+                registro: expense.registrationNumber || ''
+            });
+        });
+        
+        contributions.forEach(contribution => {
+            allMovements.push({
+                tipo: 'APORTACION',
+                fecha: contribution.date,
+                concepto: contribution.description,
+                categoria: 'Aportación',
+                monto: `+${contribution.amount}`,
+                usuario: contribution.userName,
+                registro: 'APORTACION'
+            });
+        });
+        
+        // Ordenar por fecha
+        allMovements.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+        
+        const headers = ['Tipo', 'Fecha', 'Concepto', 'Categoría', 'Monto (MXN)', 'Usuario', 'Registro'];
+        const rows = allMovements.map(movement => [
+            movement.tipo,
+            movement.fecha,
+            `"${movement.concepto.replace(/"/g, '""')}"`,
+            movement.categoria,
+            movement.monto,
+            movement.usuario,
+            movement.registro
+        ]);
+        
+        const csvContent = [headers, ...rows]
+            .map(row => row.join(','))
+            .join('\n');
+        
+        // Descargar CSV
+        const BOM = '\uFEFF';
+        const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        
+        const { projectName } = reportData;
+        const today = new Date().toISOString().split('T')[0];
+        const cleanName = projectName.replace(/[^a-zA-Z0-9]/g, '_');
+        link.download = `Reporte_${cleanName}_${today}.csv`;
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // 📅 CIERRE MENSUAL
+    checkAndPerformMonthlyClose() {
+        console.log('🔍 ENTRANDO A checkAndPerformMonthlyClose()');
+        
+        // Calcular días restantes del mes
+        const today = new Date();
+        const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        const daysRemaining = Math.ceil((lastDayOfMonth - today) / (1000 * 60 * 60 * 24));
+        
+        console.log('📅 Verificando cierre mensual:', {
+            today: today.toLocaleDateString('es-ES'),
+            lastDay: lastDayOfMonth.toLocaleDateString('es-ES'),
+            daysRemaining: daysRemaining
+        });
+        
+        if (daysRemaining > 7) {
+            // Hay más de 7 días restante - mostrar advertencia
+            console.log('⚠️ Mostrando alerta de cierre prematuro. Días restantes:', daysRemaining);
+            this.showCustomConfirm(
+                '⚠️ Cierre Prematuro',
+                `¿Seguro que quieres cerrar el mes ${daysRemaining} días antes?\n\nFaltan ${daysRemaining} días para fin de mes.\nEsta acción reiniciará TODOS los datos y NO se puede deshacer.`,
+                () => {
+                    // SÍ - Proceder con cierre prematuro
+                    console.log('✅ Usuario confirmó cierre prematuro');
+
+                    this.performMonthlyClose();
+                },
+                'Sí, cerrar ahora',
+                'No, cancelar',
+                null
+            );
+        } else {
+            // Es última semana del mes (0-7 días) - proceder directamente
+            console.log('📅 Estamos en la última semana del mes, procediendo directamente');
+
+            this.performMonthlyClose();
+        }
+    }
+
+    performMonthlyClose() {
+        console.log('🔥 ENTRANDO A performMonthlyClose()');
+        console.log('🔥 Iniciando cierre mensual completo');
+        
+        try {
+            // 1. Verificar que hay proyecto seleccionado
+            console.log('🔍 Debug proyecto seleccionado:', this.selectedProjectId);
+            console.log('🔍 Debug proyectos disponibles:', this.dataManager.projects);
+            
+            if (!this.selectedProjectId) {
+                throw new Error('No hay proyecto seleccionado para exportar');
+            }
+            
+            const project = this.dataManager.projects.find(p => p.id === this.selectedProjectId);
+            console.log('🔍 Debug proyecto encontrado:', project);
+            
+            if (!project) {
+                // Si no encuentra el proyecto, usar el primer proyecto disponible
+                console.log('⚠️ Proyecto no encontrado, usando primer proyecto disponible');
+                const firstProject = this.dataManager.projects[0];
+                if (firstProject) {
+                    this.selectedProjectId = firstProject.id;
+                    console.log('✅ Proyecto seleccionado automáticamente:', firstProject.name);
+                } else {
+                    throw new Error('No hay proyectos disponibles en el sistema');
+                }
+            }
+            
+            // 2. Obtener proyecto final (puede haber cambiado en la validación)
+            const finalProject = this.dataManager.projects.find(p => p.id === this.selectedProjectId);
+            
+            // 3. Exportar datos ANTES del cierre (con descarga automática)
+            console.log('📊 Exportando datos del proyecto:', finalProject.name);
+            const reportData = this.getReportData(this.selectedProjectId);
+            const csvContent = this.generateReportCSV(reportData);
+            console.log('💾 Descargando CSV:', finalProject.name);
+            console.log('🔍 Verificando downloadCSV:', typeof this.downloadCSV);
+            console.log('🔍 This object:', this);
+            
+            // Verificar si la función existe antes de llamarla
+            if (typeof this.downloadCSV === 'function') {
+                this.downloadCSV(csvContent, `IDACONN_${finalProject.name.replace(/\s/g, '_')}_${new Date().toISOString().substring(0, 7)}.csv`);
+            } else {
+                console.error('❌ downloadCSV no es una función');
+                // Crear descarga manual
+                const BOM = '\uFEFF';
+                const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `IDACONN_${finalProject.name.replace(/\s/g, '_')}_${new Date().toISOString().substring(0, 7)}.csv`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                console.log('✅ Descarga manual completada');
+            }
+            
+            // 3. Cerrar el modal de confirmación primero
+            this.hideConfirmModal();
+            
+            // 4. Esperar un momento para que se complete la descarga
+            setTimeout(() => {
+                // 5. Realizar cierre mensual COMPLETO
+                console.log('🔄 Ejecutando reset mensual');
+                this.dataManager.resetMonth();
+                
+                // 6. Recargar vista actual
+                this.loadExpenses();
+                this.loadProjects();
+                
+                // 7. Cerrar modales
+                this.hideReportsModal();
+                
+                // 8. Mostrar confirmación final
+                alert('✅ Cierre Mensual Completado\\n\\n📁 Datos exportados y descargados\\n🗃️ Gastos archivados por mes\\n🔄 Contadores reiniciados a 0\\n💰 Saldos gastados reiniciados\\n\\nLa página se recargará ahora.');
+                
+                // 9. Recargar página
+                window.location.reload();
+                
+            }, 2000); // Esperar 2 segundos para la descarga
+            
+        } catch (error) {
+            console.error('❌ Error during monthly close:', error);
+            this.showCustomConfirm(
+                '❌ Error en Cierre',
+                'Hubo un problema durante el cierre mensual:\n\n' + error.message + '\n\nPor favor inténtalo de nuevo.',
+                () => {},
+                'Cerrar',
+                '',
+                null
+            );
+        }
     }
 
     // 🔧 UTILIDADES
@@ -1870,33 +3777,1128 @@ class ExpenseApp {
     }
 
     // 💬 DIÁLOGOS PERSONALIZADOS
-    showCustomConfirm(title, message, onConfirm, confirmText = 'SÍ', cancelText = 'NO') {
+    showCustomConfirm(title, message, onConfirm, confirmText = 'Cerrar Mes', cancelText = 'Descargar', onCancel = null) {
+
+        
+        // Cerrar cualquier modal abierto primero
+        document.querySelectorAll('.modal.show').forEach(modal => {
+            modal.classList.remove('show');
+        });
+        
+        // Configurar contenido del modal
         document.getElementById('confirmTitle').textContent = title;
-        document.getElementById('confirmMessage').textContent = message;
-        document.getElementById('confirmYes').textContent = confirmText;
-        document.getElementById('confirmNo').textContent = cancelText;
+        document.getElementById('confirmMessage').innerHTML = message.replace(/\n/g, '<br>');
+        document.getElementById('confirmYesText').textContent = confirmText;
+        document.getElementById('confirmNoText').textContent = cancelText;
         
         this.pendingConfirmAction = onConfirm;
-        document.getElementById('confirmModal').classList.add('show');
+        this.pendingCancelAction = onCancel;
+        
+        // Mostrar modal con delay para asegurar que se renderiza
+        setTimeout(() => {
+            const modal = document.getElementById('confirmModal');
+            modal.classList.add('show');
+
+        }, 100);
     }
 
     hideConfirmModal() {
         document.getElementById('confirmModal').classList.remove('show');
         this.pendingConfirmAction = null;
+        this.pendingCancelAction = null;
     }
 
     confirmAction() {
+        console.log('✅ Ejecutando confirmAction');
         if (this.pendingConfirmAction) {
+            console.log('✅ Ejecutando acción de confirmar');
             this.pendingConfirmAction();
         }
+        // El modal se cierra desde cada función específica según su necesidad
+    }
+
+    cancelAction() {
+        console.log('🔄 Ejecutando cancelAction');
+        if (this.pendingCancelAction) {
+            console.log('✅ Ejecutando acción de cancelar');
+            this.pendingCancelAction();
+        } else {
+            console.log('ℹ️ No hay acción de cancelar definida');
+        }
+        // Cancelar siempre cierra el modal
         this.hideConfirmModal();
+    }
+
+    // 👥 GESTIÓN DE SOLICITUDES DE ACCESO
+    showRequestAccessModal() {
+        document.getElementById('requestAccessModal').classList.add('show');
+        document.getElementById('requestName').focus();
+    }
+
+    hideRequestAccessModal() {
+        document.getElementById('requestAccessModal').classList.remove('show');
+        document.getElementById('accessRequestForm').reset();
+    }
+
+    async handleAccessRequest(e) {
+        e.preventDefault();
+        
+        const name = document.getElementById('requestName').value.trim();
+        const email = document.getElementById('requestEmail').value.trim();
+        const message = document.getElementById('requestMessage').value.trim();
+
+        if (!name || !email) {
+            this.showAlert(
+                'Campos Requeridos',
+                'Por favor completa el nombre y email.',
+                'fas fa-exclamation-triangle text-yellow-500'
+            );
+            return;
+        }
+
+        // Guardar solicitud en localStorage
+        const request = this.dataManager.addUserRequest({ name, email, message });
+        
+        // Enviar notificación al administrador
+        await this.notifyAdminNewRequest(request);
+        
+        this.hideRequestAccessModal();
+        this.showAlert(
+            '✅ Solicitud Enviada',
+            `Gracias ${name}, tu solicitud ha sido enviada al administrador.\n\nRecibirás una respuesta en ${email} dentro de las próximas 24-48 horas.`,
+            'fas fa-check-circle text-green-500'
+        );
+    }
+
+    async notifyAdminNewRequest(request) {
+        // Notificación interna - marcar que hay solicitudes pendientes
+        this.markPendingRequestsAvailable();
+        console.log('🔔 Nueva solicitud registrada:', request.name, '(' + request.email + ')');
+    }
+
+    markPendingRequestsAvailable() {
+        // Marcar en localStorage que hay solicitudes pendientes
+        const pendingCount = this.dataManager.getPendingUsers().filter(u => u.status === 'pending').length;
+        localStorage.setItem('idaconn_pending_notifications', pendingCount.toString());
+        
+        // Actualizar badge si el usuario actual es admin
+        this.updatePendingRequestsBadge();
+    }
+
+    updatePendingRequestsBadge() {
+        console.log('🔔 DEBUG: updatePendingRequestsBadge() iniciando');
+        
+        const currentUser = this.dataManager.getCurrentUser();
+        console.log('🔔 DEBUG: Usuario actual:', currentUser);
+        
+        if (!currentUser || currentUser.role !== 'admin') {
+            console.log('🔔 DEBUG: Usuario no es admin, saliendo');
+            return;
+        }
+
+        // Obtener conteo actual de usuarios pendientes directamente de los datos
+        const pendingUsers = this.dataManager.getPendingUsers().filter(u => u.status === 'pending');
+        const pendingCount = pendingUsers.length;
+        
+        console.log('🔔 DEBUG: Usuarios pendientes encontrados:', pendingUsers);
+        console.log('🔔 DEBUG: Conteo de pendientes:', pendingCount);
+        
+        const manageRequestsBtn = document.getElementById('manageRequestsBtn');
+        
+        if (!manageRequestsBtn) {
+            console.log('🔔 DEBUG: No se encontró el botón manageRequestsBtn');
+            return;
+        }
+
+        // Remover badge existente
+        const existingBadge = manageRequestsBtn.querySelector('.notification-badge');
+        if (existingBadge) {
+            console.log('🔔 DEBUG: Removiendo badge existente');
+            existingBadge.remove();
+        }
+
+        if (pendingCount > 0) {
+            console.log('🔔 DEBUG: Creando nuevo badge GRANDE con conteo:', pendingCount);
+            
+            // Crear nuevo badge MÁS GRANDE Y NOTORIO
+            const badge = document.createElement('span');
+            badge.className = 'notification-badge absolute -top-3 -right-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-full min-w-8 h-8 flex items-center justify-center font-black animate-pulse border-4 border-white shadow-2xl';
+            badge.textContent = pendingCount;
+            badge.style.fontSize = '14px';
+            badge.style.zIndex = '30';
+            badge.style.boxShadow = '0 8px 20px rgba(239, 68, 68, 0.6), 0 0 0 6px rgba(239, 68, 68, 0.2), inset 0 2px 4px rgba(255, 255, 255, 0.3)';
+            badge.style.animation = 'pulse 1.5s infinite, bounce 2s infinite alternate';
+            
+            // Agregar keyframes de animación personalizada
+            if (!document.getElementById('badgeAnimationStyles')) {
+                const style = document.createElement('style');
+                style.id = 'badgeAnimationStyles';
+                style.textContent = `
+                    @keyframes badgePulse {
+                        0%, 100% { transform: scale(1); }
+                        50% { transform: scale(1.15); }
+                    }
+                    @keyframes badgeGlow {
+                        0%, 100% { box-shadow: 0 8px 20px rgba(239, 68, 68, 0.6), 0 0 0 6px rgba(239, 68, 68, 0.2); }
+                        50% { box-shadow: 0 12px 30px rgba(239, 68, 68, 0.8), 0 0 0 8px rgba(239, 68, 68, 0.4); }
+                    }
+                `;
+                document.head.appendChild(style);
+                badge.style.animation = 'badgePulse 1.2s infinite, badgeGlow 2s infinite';
+            }
+            
+            // Añadir posición relativa al botón padre
+            manageRequestsBtn.style.position = 'relative';
+            manageRequestsBtn.appendChild(badge);
+            
+            console.log('🔔 DEBUG: Badge GRANDE añadido al DOM');
+        } else {
+            console.log('🔔 DEBUG: No hay usuarios pendientes, no se muestra badge');
+        }
+    }
+
+    // Funciones para el panel administrativo (para implementar después)
+    async approveUserRequest(requestId) {
+        const tempPassword = 'temp' + Math.random().toString(36).substr(2, 6);
+        const result = this.dataManager.approveUserRequest(requestId, tempPassword);
+        
+        if (result) {
+            await this.sendApprovalEmail(result.request, tempPassword);
+            
+            // Actualizar todas las interfaces
+            this.loadPendingUsers(); // Para el modal (si está abierto)
+            this.loadRegisteredUsers(); // Para la sección de usuarios
+            this.loadPendingRequestsSection(); // Para la sección de solicitudes
+            this.updatePendingRequestsBadge(); // Actualizar contador
+        }
+    }
+
+    promptAndRejectUser(requestId) {
+        console.log('🚫 DEBUG: promptAndRejectUser iniciando para ID:', requestId);
+        
+        // Remover cualquier diálogo existente
+        const existingDialog = document.querySelector('.rejection-dialog');
+        if (existingDialog) {
+            existingDialog.remove();
+        }
+        
+        // Crear un diálogo personalizado para obtener el motivo del rechazo
+        const dialog = document.createElement('div');
+        dialog.className = 'rejection-dialog fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center';
+        dialog.style.zIndex = '9999';
+        dialog.innerHTML = `
+            <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-2xl transform">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-exclamation-triangle text-orange-500 text-xl mr-3"></i>
+                    <h3 class="text-lg font-semibold text-gray-900">Motivo de Rechazo</h3>
+                </div>
+                <p class="text-gray-600 mb-4">Por favor, especifica el motivo por el cual rechazas esta solicitud:</p>
+                <textarea 
+                    id="rejectionReasonText"
+                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent" 
+                    rows="4" 
+                    placeholder="Ejemplo: Información incompleta, usuario no autorizado, etc."
+                    maxlength="500"
+                ></textarea>
+                <div class="text-right text-sm text-gray-500 mb-4">
+                    <span id="charCounter">0</span>/500 caracteres
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button 
+                        id="cancelRejectBtn"
+                        class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded font-medium transition-colors"
+                    >
+                        Cancelar
+                    </button>
+                    <button 
+                        id="confirmRejectBtn"
+                        class="bg-gray-400 text-white px-4 py-2 rounded font-medium cursor-not-allowed"
+                        disabled
+                    >
+                        <i class="fas fa-times mr-2"></i>Rechazar
+                    </button>
+                </div>
+            </div>
+        `;
+
+        console.log('🚫 DEBUG: Añadiendo diálogo al DOM');
+        document.body.appendChild(dialog);
+        
+        // Forzar el display del diálogo
+        dialog.style.display = 'flex';
+        
+        console.log('🚫 DEBUG: Diálogo añadido y visible');
+
+        // Obtener elementos
+        const textarea = document.getElementById('rejectionReasonText');
+        const charCounter = document.getElementById('charCounter');
+        const confirmBtn = document.getElementById('confirmRejectBtn');
+        const cancelBtn = document.getElementById('cancelRejectBtn');
+
+        console.log('🚫 DEBUG: Elementos obtenidos:', {textarea, charCounter, confirmBtn, cancelBtn});
+
+        // Event listener para el textarea
+        textarea.addEventListener('input', function() {
+            const length = this.value.length;
+            const trimmedLength = this.value.trim().length;
+            
+            charCounter.textContent = length;
+            
+            console.log('🚫 DEBUG: Caracteres ingresados:', length, 'válidos:', trimmedLength);
+            
+            if (trimmedLength >= 10) {
+                confirmBtn.disabled = false;
+                confirmBtn.className = 'bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded font-medium transition-colors';
+                console.log('🚫 DEBUG: Botón HABILITADO');
+            } else {
+                confirmBtn.disabled = true;
+                confirmBtn.className = 'bg-gray-400 text-white px-4 py-2 rounded font-medium cursor-not-allowed';
+                console.log('🚫 DEBUG: Botón DESHABILITADO');
+            }
+        });
+
+        // Event listener para confirmar
+        confirmBtn.addEventListener('click', () => {
+            const reason = textarea.value.trim();
+            console.log('🚫 DEBUG: Confirmar clickeado con razón:', reason);
+            
+            if (reason.length >= 10) {
+                dialog.remove();
+                this.rejectUserRequest(requestId, reason);
+            } else {
+                alert('Por favor ingresa al menos 10 caracteres para el motivo del rechazo.');
+            }
+        });
+
+        // Event listener para cancelar
+        cancelBtn.addEventListener('click', () => {
+            console.log('🚫 DEBUG: Cancelar clickeado');
+            dialog.remove();
+        });
+
+        // Enfocar textarea
+        setTimeout(() => {
+            textarea.focus();
+            console.log('🚫 DEBUG: Focus aplicado al textarea');
+        }, 200);
+    }
+
+    async rejectUserRequest(requestId, reason = '') {
+        const result = this.dataManager.rejectUserRequest(requestId, reason);
+        
+        if (result) {
+            await this.sendRejectionEmail(result, reason);
+            
+            // Actualizar todas las interfaces
+            this.loadPendingUsers(); // Para el modal (si está abierto)
+            this.loadPendingRequestsSection(); // Para la sección de solicitudes
+            this.updatePendingRequestsBadge(); // Actualizar contador
+        }
+    }
+
+    async sendApprovalEmail(request, tempPassword) {
+        console.log('✅ ==================== SENDING APPROVAL EMAIL ====================');
+        
+        // USAR LAS NUEVAS VARIABLES DEFINIDAS EN EMAILJS
+        const templateParams = {
+            to_email: request.email,                    // EmailJS interno para destinatario
+            name: 'IDACONN',                           // {{name}} = IDACONN
+            usermail: request.email,                   // {{usermail}} = Correo del Solicitante
+            Destinatario: request.name,                // {{Destinatario}} = Nombre del Solicitante
+            clave: tempPassword,                       // {{clave}} = Contraseña temporal
+            weblink: window.location.origin,           // {{weblink}} = URL de acceso
+            contacto: 'ramon.rivas@me.com'             // {{contacto}} = correo de contacto
+        };
+
+        console.log('✅ ==================== NUEVAS VARIABLES EMAILJS ====================');
+        console.log('✅ to_email (destinatario):', templateParams.to_email);
+        console.log('✅ name (IDACONN):', templateParams.name);
+        console.log('✅ usermail (correo solicitante):', templateParams.usermail);
+        console.log('✅ Destinatario (nombre):', templateParams.Destinatario);
+        console.log('✅ clave (contraseña temporal):', templateParams.clave);
+        console.log('✅ weblink (URL de acceso):', templateParams.weblink);
+        console.log('✅ contacto (admin email):', templateParams.contacto);
+        console.log('✅ Template ID:', EMAIL_CONFIG.TEMPLATES.APPROVAL);
+        console.log('✅ ================================================================');
+        
+        const result = await sendEmail(EMAIL_CONFIG.TEMPLATES.APPROVAL, templateParams);
+        
+        console.log('🔍 DEBUG: Resultado de sendEmail:', result);
+        
+        if (result.success && result.mode === 'real') {
+            this.showAlert(
+                '✅ Email de Aprobación Enviado',
+                `Se han enviado las credenciales a ${request.name} (${request.email})\n\nContraseña: ${tempPassword}\nURL: ${window.location.origin}\n\nUsando variables: {{clave}} y {{weblink}}`,
+                'fas fa-envelope text-green-500'
+            );
+        } else if (result.mode === 'simulation') {
+            this.showAlert(
+                '📧 Email Simulado',
+                `SIMULACIÓN: Se enviarían credenciales a ${request.name}\n\nEmail: ${request.email}\nContraseña: ${tempPassword}\nURL: ${window.location.origin}\n\n⚠️ Configura EmailJS para enviar emails reales.`,
+                'fas fa-envelope text-orange-500'
+            );
+        } else {
+            this.showAlert(
+                '❌ Error de Email',
+                `No se pudo enviar el email a ${request.email}. Error: ${result.error?.message || 'Desconocido'}`,
+                'fas fa-exclamation-circle text-red-500'
+            );
+        }
+    }
+
+    async sendRejectionEmail(request, reason) {
+        console.log('🚫 ==================== SENDING REJECTION EMAIL ====================');
+        
+        // Usar el motivo del objeto request si existe, sino usar el parámetro reason
+        const finalReason = request.rejectionReason || reason || 'Motivo no especificado por el administrador';
+        
+        // USAR LAS NUEVAS VARIABLES DEFINIDAS EN EMAILJS
+        const templateParams = {
+            to_email: request.email,                    // EmailJS interno para destinatario
+            name: 'IDACONN',                           // {{name}} = IDACONN
+            usermail: request.email,                   // {{usermail}} = Correo del Solicitante
+            Destinatario: request.name,                // {{Destinatario}} = Nombre del Solicitante
+            motivo: finalReason,                       // {{motivo}} = Causa del rechazo
+            contacto: 'ramon.rivas@me.com'             // {{contacto}} = correo de contacto
+        };
+
+        console.log('🚫 ==================== NUEVAS VARIABLES EMAILJS ====================');
+        console.log('🚫 to_email (destinatario):', templateParams.to_email);
+        console.log('🚫 name (IDACONN):', templateParams.name);
+        console.log('🚫 usermail (correo solicitante):', templateParams.usermail);
+        console.log('🚫 Destinatario (nombre):', templateParams.Destinatario);
+        console.log('🚫 motivo (razón rechazo):', templateParams.motivo);
+        console.log('🚫 contacto (admin email):', templateParams.contacto);
+        console.log('🚫 Template ID:', EMAIL_CONFIG.TEMPLATES.REJECTION);
+        console.log('🚫 ================================================================');
+        
+        const result = await sendEmail(EMAIL_CONFIG.TEMPLATES.REJECTION, templateParams);
+        console.log('🚫 RESULTADO del email:', result);
+        
+        if (result.success && result.mode === 'real') {
+            this.showAlert(
+                '✅ Email de Rechazo Enviado',
+                `Se ha notificado el rechazo a ${request.name} (${request.email})\n\nMotivo: ${finalReason}\n\nUsando nuevas variables de EmailJS`,
+                'fas fa-envelope text-green-500'
+            );
+        } else if (result.mode === 'simulation') {
+            this.showAlert(
+                '📧 Email Simulado',
+                `SIMULACIÓN: Se notificaría rechazo a ${request.name}\n\nEmail: ${request.email}\nMotivo: ${finalReason}\n\n⚠️ Configura EmailJS para enviar emails reales.`,
+                'fas fa-envelope text-orange-500'
+            );
+        } else {
+            this.showAlert(
+                '❌ Error de Email',
+                `No se pudo enviar el email de rechazo a ${request.email}. Error: ${result.error?.message || 'Desconocido'}`,
+                'fas fa-exclamation-circle text-red-500'
+            );
+        }
+    }
+
+    // 🔧 GESTIÓN AVANZADA DE USUARIOS
+    editUser(userId) {
+        const user = this.dataManager.getUserById(userId);
+        if (!user) {
+            this.showAlert(
+                'Error',
+                'Usuario no encontrado',
+                'fas fa-exclamation-circle text-red-500'
+            );
+            return;
+        }
+
+        // Cargar datos del usuario en el modal
+        document.getElementById('editUserId').value = user.id;
+        document.getElementById('editUserName').value = user.name;
+        document.getElementById('editUserEmail').value = user.email;
+        document.getElementById('editUserRole').value = user.role;
+        document.getElementById('editUserPassword').value = ''; // Siempre vacío por seguridad
+
+        // Mostrar modal
+        document.getElementById('editUserModal').classList.add('show');
+        document.getElementById('editUserName').focus();
+    }
+
+    hideEditUserModal() {
+        document.getElementById('editUserModal').classList.remove('show');
+        document.getElementById('editUserForm').reset();
+    }
+
+    handleEditUser(e) {
+        e.preventDefault();
+
+        const userId = document.getElementById('editUserId').value;
+        const name = document.getElementById('editUserName').value.trim();
+        const email = document.getElementById('editUserEmail').value.trim();
+        const role = document.getElementById('editUserRole').value;
+        const newPassword = document.getElementById('editUserPassword').value.trim();
+
+        if (!name || !email || !role) {
+            this.showAlert(
+                'Campos Requeridos',
+                'Por favor completa nombre, email y rol.',
+                'fas fa-exclamation-triangle text-yellow-500'
+            );
+            return;
+        }
+
+        // Verificar si el email ya existe (excluyendo el usuario actual)
+        const existingUser = this.dataManager.users.find(u => u.email === email && u.id !== userId);
+        if (existingUser) {
+            this.showAlert(
+                'Email Duplicado',
+                'Ya existe un usuario con ese email.',
+                'fas fa-exclamation-triangle text-yellow-500'
+            );
+            return;
+        }
+
+        // Preparar datos para actualizar
+        const updateData = { name, email, role };
+        if (newPassword) {
+            updateData.password = newPassword;
+        }
+
+        // Actualizar usuario
+        const updatedUser = this.dataManager.updateUser(userId, updateData);
+        
+        if (updatedUser) {
+            this.hideEditUserModal();
+            
+            // Actualizar todas las interfaces
+            this.loadUsersInModal(); // Para el modal (si está abierto)
+            this.loadRegisteredUsers(); // Para la sección de usuarios
+            this.loadProjectsSection(); // Por si hay cambios que afecten proyectos
+            
+            this.showAlert(
+                '✅ Usuario Actualizado',
+                `Los datos de ${updatedUser.name} han sido actualizados correctamente.`,
+                'fas fa-check-circle text-green-500'
+            );
+        }
+    }
+
+    confirmDeleteUser(userId) {
+        const user = this.dataManager.getUserById(userId);
+        if (!user) return;
+
+        // Verificar si es el último admin
+        if (user.role === 'admin') {
+            const adminCount = this.dataManager.users.filter(u => u.role === 'admin').length;
+            if (adminCount <= 1) {
+                this.showAlert(
+                    '⚠️ No se puede eliminar',
+                    'No puedes eliminar el último administrador del sistema.',
+                    'fas fa-shield-alt text-orange-500'
+                );
+                return;
+            }
+        }
+
+        this.showCustomConfirm(
+            '🗑️ Confirmar Eliminación',
+            `¿Estás seguro de que quieres eliminar al usuario "${user.name}"?\n\nEsta acción NO se puede deshacer.\n\nTodos los gastos asociados a este usuario se mantendrán en el sistema.`,
+            () => {
+                this.deleteUserConfirmed(userId);
+            },
+            'Sí, eliminar',
+            'Cancelar',
+            null
+        );
+    }
+
+    deleteUserConfirmed(userId) {
+        const user = this.dataManager.getUserById(userId);
+        const result = this.dataManager.deleteUser(userId);
+        
+        if (result === true) {
+            // Actualizar todas las interfaces
+            this.loadUsersInModal(); // Para el modal (si está abierto)
+            this.loadRegisteredUsers(); // Para la sección de usuarios
+            this.loadProjectsSection(); // Por si hay cambios que afecten proyectos
+            
+            this.showAlert(
+                '✅ Usuario Eliminado',
+                `El usuario "${user.name}" ha sido eliminado del sistema.`,
+                'fas fa-check-circle text-green-500'
+            );
+        } else if (result.error) {
+            this.showAlert(
+                '❌ Error',
+                result.error,
+                'fas fa-exclamation-circle text-red-500'
+            );
+        }
+    }
+
+    // 📢 MODAL DE ALERTA SIMPLE
+    showAlert(title, message, icon = 'fas fa-info-circle text-blue-500') {
+        document.getElementById('alertTitle').textContent = title;
+        document.getElementById('alertMessage').innerHTML = message.replace(/\n/g, '<br>');
+        document.getElementById('alertIcon').className = icon;
+        
+        // Cerrar cualquier modal abierto primero
+        document.querySelectorAll('.modal.show').forEach(modal => {
+            modal.classList.remove('show');
+        });
+        
+        document.getElementById('alertModal').classList.add('show');
+    }
+
+    hideAlertModal() {
+        document.getElementById('alertModal').classList.remove('show');
+    }
+
+    // 🔑 GESTIÓN DE CAMBIO DE CONTRASEÑA EN PRIMER LOGIN
+    showChangePasswordModal(user) {
+        console.log('🔑 Mostrando modal de cambio de contraseña para:', user.name);
+        
+        // Mostrar la contraseña temporal (solo lectura)
+        document.getElementById('currentPassword').value = user.password;
+        
+        // Limpiar campos
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmPassword').value = '';
+        
+        // Mostrar modal
+        document.getElementById('changePasswordModal').classList.add('show');
+        
+        // Enfocar en nueva contraseña
+        setTimeout(() => {
+            document.getElementById('newPassword').focus();
+        }, 100);
+    }
+
+    handleChangePassword(e) {
+        e.preventDefault();
+        
+        const currentPassword = document.getElementById('currentPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        
+        // Validaciones
+        if (!newPassword || newPassword.length < 6) {
+            this.showAlert(
+                'Contraseña Inválida',
+                'La nueva contraseña debe tener al menos 6 caracteres.',
+                'fas fa-exclamation-triangle text-orange-500'
+            );
+            return;
+        }
+        
+        if (newPassword !== confirmPassword) {
+            this.showAlert(
+                'Contraseñas No Coinciden',
+                'La nueva contraseña y su confirmación deben ser iguales.',
+                'fas fa-exclamation-triangle text-orange-500'
+            );
+            return;
+        }
+        
+        if (newPassword === currentPassword) {
+            this.showAlert(
+                'Contraseña Idéntica',
+                'La nueva contraseña debe ser diferente a la temporal.',
+                'fas fa-exclamation-triangle text-orange-500'
+            );
+            return;
+        }
+        
+        // Actualizar contraseña en el usuario
+        const result = this.dataManager.updateUserPassword(this.dataManager.currentUser.id, newPassword);
+        
+        if (result) {
+            // Cerrar modal
+            document.getElementById('changePasswordModal').classList.remove('show');
+            
+            // Actualizar usuario actual
+            this.dataManager.currentUser = result;
+            
+            // Mostrar confirmación y continuar al dashboard
+            this.showAlert(
+                '✅ Contraseña Cambiada',
+                'Tu contraseña ha sido actualizada exitosamente. Ahora puedes acceder al sistema.',
+                'fas fa-check-circle text-green-500'
+            );
+            
+            // Ir al dashboard después de cerrar la alerta
+            setTimeout(() => {
+                this.showDashboard(result);
+            }, 2000);
+        } else {
+            this.showAlert(
+                'Error',
+                'No se pudo actualizar la contraseña. Intenta de nuevo.',
+                'fas fa-exclamation-circle text-red-500'
+            );
+        }
     }
 }
 
 // 🚀 INICIALIZAR APLICACIÓN
 let app;
 document.addEventListener('DOMContentLoaded', function() {
+    // Debug EmailJS al cargar
+    console.log('🔍 EmailJS disponible al cargar:', typeof emailjs !== 'undefined');
+    if (typeof emailjs !== 'undefined') {
+        console.log('✅ EmailJS library cargada correctamente');
+    } else {
+        console.error('❌ EmailJS library NO está disponible');
+    }
+    
     app = new ExpenseApp();
+    
+    // 🔧 Configurar event listeners básicos SOLAMENTE
+    setupBasicEventListeners();
+    
+    // Función de prueba global para EmailJS
+    window.testEmailJS = async function() {
+        console.log('🧪 Iniciando prueba de EmailJS...');
+        
+        const testParams = {
+            to_email: 'ramon.rivas@me.com',           // EmailJS interno
+            name: 'IDACONN',                          // {{name}}
+            usermail: 'usuario@test.com',             // {{usermail}}
+            Destinatario: 'Usuario de Prueba',        // {{Destinatario}}
+            clave: 'test123',                         // {{clave}}
+            weblink: window.location.origin,          // {{weblink}}
+            contacto: 'ramon.rivas@me.com'            // {{contacto}}
+        };
+        
+        console.log('🧪 Enviando email de prueba a ramon.rivas@me.com...');
+        
+        try {
+            const result = await sendEmail(EMAIL_CONFIG.TEMPLATES.APPROVAL, testParams);
+            console.log('🧪 Resultado de la prueba:', result);
+            
+            if (result.success && result.mode === 'real') {
+                console.log('✅ ¡EMAIL DE PRUEBA ENVIADO! Revisa tu bandeja de entrada.');
+            } else if (result.mode === 'simulation') {
+                console.log('⚠️ Está en modo simulación, revisa la configuración de EmailJS');
+            } else {
+                console.log('❌ Error en la prueba:', result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error en testEmailJS:', error);
+        }
+    };
+
+    // Función de prueba específica para email de rechazo
+    window.testRejectionEmail = async function() {
+        console.log('🧪🚫 ============= INICIANDO PRUEBA DE EMAIL RECHAZO =============');
+        
+        const testParams = {
+            to_email: 'ramon.rivas@me.com',            // EmailJS interno
+            name: 'IDACONN',                           // {{name}}
+            usermail: 'solicitante@test.com',         // {{usermail}}
+            Destinatario: 'Juan Carlos Prueba',       // {{Destinatario}}
+            motivo: 'MOTIVO DE PRUEBA: Documentación incompleta y falta de autorización necesaria', // {{motivo}}
+            contacto: 'ramon.rivas@me.com'            // {{contacto}}
+        };
+        
+        console.log('🧪🚫 EMAIL_CONFIG completo:', EMAIL_CONFIG);
+        console.log('🧪🚫 Template ID a usar:', EMAIL_CONFIG.TEMPLATES.REJECTION);
+        console.log('🧪🚫 Service ID:', EMAIL_CONFIG.SERVICE_ID);
+        console.log('🧪🚫 Public Key:', EMAIL_CONFIG.PUBLIC_KEY);
+        console.log('🧪🚫 NUEVAS VARIABLES que se enviarán:');
+        console.log(`🧪🚫   name ({{name}}): "${testParams.name}"`);
+        console.log(`🧪🚫   usermail ({{usermail}}): "${testParams.usermail}"`);
+        console.log(`🧪🚫   Destinatario ({{Destinatario}}): "${testParams.Destinatario}"`);
+        console.log(`🧪🚫   motivo ({{motivo}}): "${testParams.motivo}"`);
+        console.log(`🧪🚫   contacto ({{contacto}}): "${testParams.contacto}"`);
+        console.log(`🧪🚫   to_email (interno): "${testParams.to_email}"`);
+        
+        console.log('🧪🚫 EmailJS disponible:', typeof emailjs !== 'undefined');
+        
+        try {
+            console.log('🧪🚫 Enviando email de prueba...');
+            const result = await sendEmail(EMAIL_CONFIG.TEMPLATES.REJECTION, testParams);
+            
+            console.log('🧪🚫 ============= RESULTADO DE LA PRUEBA =============');
+            console.log('🧪🚫 Resultado completo:', result);
+            
+            if (result.success && result.mode === 'real') {
+                console.log('✅✅ ¡EMAIL DE RECHAZO ENVIADO EXITOSAMENTE!');
+                console.log('📧 Revisa la bandeja de entrada de ramon.rivas@me.com');
+                console.log('📧 Debería contener las NUEVAS VARIABLES:');
+                console.log(`📧   - {{name}}: ${testParams.name}`);
+                console.log(`📧   - {{Destinatario}}: ${testParams.Destinatario}`);
+                console.log(`📧   - {{usermail}}: ${testParams.usermail}`);
+                console.log(`📧   - {{motivo}}: ${testParams.motivo}`);
+                console.log(`📧   - {{contacto}}: ${testParams.contacto}`);
+            } else if (result.mode === 'simulation') {
+                console.log('⚠️ Está en modo simulación - EmailJS no configurado correctamente');
+            } else {
+                console.log('❌ Error en el envío:', result.error);
+            }
+        } catch (error) {
+            console.error('❌❌ Error crítico en testRejectionEmail:', error);
+        }
+        
+        console.log('🧪🚫 ========================================================');
+    };
+
+    // Función para comparar templates de aprobación vs rechazo
+    window.compareTemplates = async function() {
+        console.log('🔍 ============= COMPARANDO TEMPLATES =============');
+        
+        // Test del template de APROBACIÓN con nuevas variables
+        const approvalParams = {
+            to_email: 'ramon.rivas@me.com',           // EmailJS interno
+            name: 'IDACONN',                          // {{name}}
+            usermail: 'test.aprobacion@test.com',     // {{usermail}}
+            Destinatario: 'Test Aprobación',          // {{Destinatario}}
+            clave: 'test123',                         // {{clave}}
+            weblink: window.location.origin,          // {{weblink}}
+            contacto: 'ramon.rivas@me.com'            // {{contacto}}
+        };
+        
+        console.log('✅ Enviando template de APROBACIÓN...');
+        console.log('✅ Template ID:', EMAIL_CONFIG.TEMPLATES.APPROVAL);
+        console.log('✅ Params:', approvalParams);
+        
+        try {
+            const approvalResult = await sendEmail(EMAIL_CONFIG.TEMPLATES.APPROVAL, approvalParams);
+            console.log('✅ Resultado aprobación:', approvalResult);
+        } catch (error) {
+            console.error('❌ Error aprobación:', error);
+        }
+        
+        // Esperar un momento
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Test del template de RECHAZO con nuevas variables
+        const rejectionParams = {
+            to_email: 'ramon.rivas@me.com',           // EmailJS interno
+            name: 'IDACONN',                          // {{name}}
+            usermail: 'test.rechazo@test.com',        // {{usermail}}
+            Destinatario: 'Test Rechazo',             // {{Destinatario}}
+            motivo: 'Motivo de prueba para comparación', // {{motivo}}
+            contacto: 'ramon.rivas@me.com'            // {{contacto}}
+        };
+        
+        console.log('🚫 Enviando template de RECHAZO...');
+        console.log('🚫 Template ID:', EMAIL_CONFIG.TEMPLATES.REJECTION);
+        console.log('🚫 Params:', rejectionParams);
+        
+        try {
+            const rejectionResult = await sendEmail(EMAIL_CONFIG.TEMPLATES.REJECTION, rejectionParams);
+            console.log('🚫 Resultado rechazo:', rejectionResult);
+        } catch (error) {
+            console.error('❌ Error rechazo:', error);
+        }
+        
+        console.log('🔍 ========================================');
+        console.log('📧 Deberías recibir 2 emails en unos segundos');
+        console.log('📧 Compara si el de APROBACIÓN tiene datos y el de RECHAZO no');
+        console.log('🔍 ========================================');
+    };
+
+    // Función para debuggear rechazo real simulando el flujo completo
+    window.debugRealRejection = async function() {
+        console.log('🔍🚫 ============= SIMULANDO RECHAZO REAL =============');
+        
+        // Simular el objeto request tal como viene del DataManager
+        const mockRequest = {
+            id: 'test_' + Date.now(),
+            name: 'María González Prueba',
+            email: 'ramon.rivas@me.com',  // Usamos el email real para recibir
+            message: 'Solicito acceso al sistema',
+            status: 'pending',
+            requestDate: new Date().toISOString()
+        };
+        
+        const mockReason = 'PRUEBA COMPLETA: Documentación insuficiente y datos incorrectos proporcionados por el solicitante';
+        
+        console.log('🔍🚫 Mock request object:', mockRequest);
+        console.log('🔍🚫 Mock reason:', mockReason);
+        
+        // Llamar directamente a sendRejectionEmail como lo haría la app
+        try {
+            await app.sendRejectionEmail(mockRequest, mockReason);
+            console.log('✅ Proceso de rechazo completado - revisa logs arriba para ver si los campos se enviaron');
+        } catch (error) {
+            console.error('❌ Error en el proceso de rechazo:', error);
+        }
+        
+        console.log('🔍🚫 =================================================');
+    };
+
+    // Función para probar el flujo completo de aprobación
+    window.testApprovalFlow = function() {
+        console.log('🧪✅ ============= PROBANDO FLUJO DE APROBACIÓN =============');
+        
+        // 1. Crear una solicitud de prueba
+        const mockRequest = {
+            name: 'Carlos Testeo',
+            email: 'carlos@test.com',
+            message: 'Solicito acceso para testing'
+        };
+        
+        console.log('1️⃣ Creando solicitud de usuario:', mockRequest);
+        const request = app.dataManager.addUserRequest(mockRequest);
+        
+        console.log('2️⃣ Solicitud creada:', request);
+        
+        // 2. Aprobar la solicitud
+        const tempPassword = 'temp123456';
+        console.log('3️⃣ Aprobando usuario con contraseña temporal:', tempPassword);
+        
+        const approvalResult = app.dataManager.approveUserRequest(request.id, tempPassword);
+        console.log('4️⃣ Resultado de aprobación:', approvalResult);
+        
+        // 3. Verificar que el usuario esté en la lista
+        const usersList = app.dataManager.users;
+        console.log('5️⃣ Lista completa de usuarios:', usersList);
+        
+        const newUser = usersList.find(u => u.email === mockRequest.email);
+        console.log('6️⃣ Usuario encontrado en la lista:', newUser);
+        
+        // 4. Probar login
+        if (newUser) {
+            console.log('7️⃣ Probando login con credenciales enviadas...');
+            const loginResult = app.dataManager.login(mockRequest.email, tempPassword);
+            console.log('8️⃣ Resultado de login:', loginResult);
+            
+            if (loginResult) {
+                console.log('✅ ¡ÉXITO! El usuario puede hacer login con las credenciales del email');
+                console.log('🔑 isFirstLogin:', loginResult.isFirstLogin);
+                console.log('🔑 tempPassword:', loginResult.tempPassword);
+            } else {
+                console.log('❌ ERROR: No se puede hacer login con las credenciales');
+            }
+        } else {
+            console.log('❌ ERROR: Usuario no encontrado en la lista después de aprobación');
+        }
+        
+        console.log('🧪✅ ========================================================');
+    };
+
+    // Función para debuggear la lista de usuarios
+    window.debugUsersList = function() {
+        console.log('👥🔍 ============= DEBUGGING LISTA DE USUARIOS =============');
+        
+        // 1. Verificar usuarios en DataManager
+        const users = app.dataManager.users;
+        console.log('1️⃣ Usuarios en app.dataManager.users:', users);
+        console.log('1️⃣ Cantidad:', users.length);
+        
+        // 2. Verificar localStorage
+        const storedUsers = localStorage.getItem('idaconn_users');
+        console.log('2️⃣ Usuarios en localStorage:', storedUsers);
+        
+        if (storedUsers) {
+            const parsedUsers = JSON.parse(storedUsers);
+            console.log('2️⃣ Usuarios parseados:', parsedUsers);
+        }
+        
+        // 3. Verificar container HTML
+        const container = document.getElementById('currentUsers');
+        console.log('3️⃣ Container #currentUsers encontrado:', !!container);
+        
+        if (container) {
+            console.log('3️⃣ Contenido actual del container:', container.innerHTML);
+        }
+        
+        // 4. Forzar carga de usuarios
+        console.log('4️⃣ Ejecutando loadUsersInModal()...');
+        app.loadUsersInModal();
+        
+        // 5. Verificar contenido después de la carga
+        if (container) {
+            console.log('5️⃣ Contenido después de loadUsersInModal():', container.innerHTML.substring(0, 300) + '...');
+        }
+        
+        // 6. Crear usuario de prueba si no hay ninguno
+        if (users.length <= 1) { // Solo admin
+            console.log('6️⃣ Creando usuario de prueba...');
+            
+            const testUser = {
+                id: Date.now().toString(),
+                name: 'Usuario de Prueba',
+                email: 'test@usuario.com',
+                role: 'user',
+                password: 'test123',
+                createdDate: new Date().toISOString(),
+                isFirstLogin: false,
+                tempPassword: false
+            };
+            
+            app.dataManager.users.push(testUser);
+            app.dataManager.saveUsers();
+            
+            console.log('6️⃣ Usuario de prueba creado:', testUser);
+            
+            // Recargar lista
+            console.log('7️⃣ Recargando lista después de crear usuario...');
+            app.loadUsersInModal();
+            
+            if (container) {
+                console.log('7️⃣ Contenido final:', container.innerHTML.substring(0, 300) + '...');
+            }
+        }
+        
+        console.log('👥🔍 ========================================================');
+    };
+    
+    console.log('🧪 Funciones de prueba disponibles:');
+    console.log('  - testEmailJS() → Prueba email de aprobación');
+    console.log('  - testRejectionEmail() → Prueba email de rechazo');
+    console.log('  - debugRealRejection() → Simula rechazo real con usuario de prueba');
+    console.log('  - compareTemplates() → Compara templates aprobación vs rechazo');
+    console.log('  - testApprovalFlow() → Prueba flujo completo de aprobación de usuario');
+    console.log('  - debugUsersList() → Verifica y muestra lista de usuarios');
+    
+    // 🔧 FUNCIONES PARA ADMINISTRACIÓN DE 3 SECCIONES
+    function setupBasicEventListeners() {
+        console.log('🔧 Configurando event listeners básicos...');
+        
+        // ============ SOLO LOGIN FORM ============
+        const loginForm = document.getElementById('loginForm');
+        if (loginForm) {
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                
+                const user = app.dataManager.login(email, password);
+                if (user) {
+                    app.showDashboard(user);
+                } else {
+                    app.showAlert(
+                        'Error de Login',
+                        'Email o contraseña incorrectos',
+                        'fas fa-exclamation-circle text-red-500'
+                    );
+                }
+            });
+            console.log('✅ Login form configurado');
+        }
+        
+        // ============ PROJECT SELECT ============
+        const projectSelect = document.getElementById('projectSelect');
+        if (projectSelect) {
+            projectSelect.addEventListener('change', (e) => {
+                app.handleProjectChange(e);
+            });
+            console.log('✅ Project select configurado');
+        }
+        
+        console.log('✅ Event listeners básicos configurados correctamente');
+    }
+    
+    // 🌍 FUNCIONES GLOBALES PARA LOS BOTONES DE PROYECTOS
+    window.editProject = function(projectId) {
+        console.log('✏️ Editando proyecto:', projectId);
+        app.showCustomConfirm(
+            'Función en Desarrollo',
+            'La edición de proyectos estará disponible pronto.',
+            () => {}
+        );
+    };
+    
+    window.deleteProject = function(projectId) {
+        console.log('🗑️ Eliminando proyecto:', projectId);
+        const project = app.dataManager.projects.find(p => p.id === projectId);
+        if (!project) return;
+        
+        app.showCustomConfirm(
+            'Eliminar Proyecto',
+            `¿Estás seguro de eliminar el proyecto "${project.name}"? Esta acción no se puede deshacer.`,
+            () => {
+                app.dataManager.deleteProject(projectId);
+                app.loadProjectsSection(); // Recargar la sección
+            }
+        );
+    };
+    
+    window.addContribution = function(projectId) {
+        console.log('💰 Agregando aportación al proyecto:', projectId);
+        const project = app.dataManager.projects.find(p => p.id === projectId);
+        if (!project) return;
+        
+        // Por ahora mostrar modal simple, luego se puede hacer más complejo
+        const amount = prompt(`¿Cuánto deseas aportar al proyecto "${project.name}"?`);
+        if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
+            const contributionData = {
+                amount: parseFloat(amount),
+                description: 'Aportación manual',
+                date: new Date().toISOString().split('T')[0]
+            };
+            
+            app.dataManager.addContribution(projectId, contributionData);
+            app.loadProjectsSection(); // Recargar la sección
+            
+            app.showCustomConfirm(
+                'Aportación Agregada',
+                `Se agregaron $${parseFloat(amount).toLocaleString()} al proyecto "${project.name}".`,
+                () => {}
+            );
+        }
+    };
+    
+    window.approveUser = function(requestId) {
+        console.log('✅ Aprobando usuario:', requestId);
+        const pendingUsers = app.dataManager.getPendingUsers();
+        const request = pendingUsers.find(r => r.id === requestId);
+        
+        if (!request) return;
+        
+        // Crear usuario aprobado
+        const newUser = {
+            id: Date.now().toString(),
+            name: request.name,
+            email: request.email,
+            role: 'user',
+            password: 'temp123', // Contraseña temporal
+            isFirstLogin: true,
+            tempPassword: true,
+            createdDate: new Date().toISOString()
+        };
+        
+        // Agregar a usuarios registrados
+        app.dataManager.users.push(newUser);
+        app.dataManager.saveUsers();
+        
+        // Remover de pendientes
+        app.dataManager.removePendingUser(requestId);
+        
+        // Recargar sección
+        app.loadPendingRequestsSection();
+        
+        app.showCustomConfirm(
+            'Usuario Aprobado',
+            `${request.name} ha sido agregado como usuario. Contraseña temporal: temp123`,
+            () => {}
+        );
+    };
+    
+    window.rejectUser = function(requestId) {
+        console.log('❌ Rechazando usuario:', requestId);
+        const pendingUsers = app.dataManager.getPendingUsers();
+        const request = pendingUsers.find(r => r.id === requestId);
+        
+        if (!request) return;
+        
+        app.showCustomConfirm(
+            'Rechazar Solicitud',
+            `¿Estás seguro de rechazar la solicitud de ${request.name}?`,
+            () => {
+                app.dataManager.removePendingUser(requestId);
+                app.loadPendingRequestsSection();
+                
+                app.showCustomConfirm(
+                    'Solicitud Rechazada',
+                    `La solicitud de ${request.name} ha sido rechazada.`,
+                    () => {}
+                );
+            }
+        );
+    };
+    
+
+
 });
 </script>
 
